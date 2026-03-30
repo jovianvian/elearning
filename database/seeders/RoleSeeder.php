@@ -7,19 +7,18 @@ use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $roles = [
-            ['name' => Role::ADMIN, 'display_name' => 'Administrator'],
-            ['name' => Role::GURU, 'display_name' => 'Guru'],
-            ['name' => Role::SISWA, 'display_name' => 'Siswa'],
+            ['name' => 'Super Admin', 'display_name' => 'Super Admin', 'code' => Role::SUPER_ADMIN, 'description' => 'Full system owner'],
+            ['name' => 'Admin', 'display_name' => 'Admin', 'code' => Role::ADMIN, 'description' => 'Operational manager'],
+            ['name' => 'Principal', 'display_name' => 'Principal', 'code' => Role::PRINCIPAL, 'description' => 'Read-only academic monitor'],
+            ['name' => 'Teacher', 'display_name' => 'Teacher', 'code' => Role::TEACHER, 'description' => 'Course and exam manager'],
+            ['name' => 'Student', 'display_name' => 'Student', 'code' => Role::STUDENT, 'description' => 'Learner'],
         ];
 
         foreach ($roles as $role) {
-            Role::updateOrCreate(['name' => $role['name']], $role);
+            Role::updateOrCreate(['code' => $role['code']], $role + ['is_active' => true]);
         }
     }
 }

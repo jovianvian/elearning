@@ -1,0 +1,342 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Question;
+use App\Models\QuestionBank;
+use App\Models\QuestionImportLog;
+use App\Models\QuestionOption;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
+use Throwable;
+
+class QuestionImportService
+{
+    public function importAiken(User $actor, QuestionBank $bank, UploadedFile $file): QuestionImportLog
+    {
+        $content = trim((string) file_get_contents($file->getRealPath()));
+        $blocks = preg_split("/\n\s*\n/u", str_replace(["\r\n", "\r"], "\n", $content)) ?: [];
+        $errors = [];
+        $successCount = 0;
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($blocks as $index => $block) {
+                $rowNumber = $index + 1;
+                $block = trim($block);
+
+                if ($block === '') {
+                    continue;
+                }
+
+                try {
+                    $parsed = $this->parseAikenBlock($block);
+                    $this->persistMultipleChoiceQuestion($bank, $actor, $parsed, 'aiken');
+                    $successCount++;
+                } catch (Throwable $e) {
+                    $errors[] = ['row' => $rowNumber, 'error' => $e->getMessage()];
+                }
+            }
+
+            $log = QuestionImportLog::create([
+                'user_id' => $actor->id,
+                'subject_id' => $bank->subject_id,
+                'import_type' => 'aiken',
+                'file_name' => $file->getClientOriginalName(),
+                'total_rows' => count($blocks),
+                'success_count' => $successCount,
+                'failed_count' => count($errors),
+                'error_log' => $errors,
+            ]);
+
+            DB::commit();
+
+            return $log;
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function importCsv(User $actor, QuestionBank $bank, UploadedFile $file): QuestionImportLog
+    {
+        $rows = $this->readCsvRows($file);
+        $errors = [];
+        $successCount = 0;
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($rows as $index => $row) {
+                $rowNumber = $index + 2;
+
+                try {
+                    $this->persistCsvRow($bank, $actor, $row);
+                    $successCount++;
+                } catch (Throwable $e) {
+                    $errors[] = ['row' => $rowNumber, 'error' => $e->getMessage()];
+                }
+            }
+
+            $log = QuestionImportLog::create([
+                'user_id' => $actor->id,
+                'subject_id' => $bank->subject_id,
+                'import_type' => 'csv',
+                'file_name' => $file->getClientOriginalName(),
+                'total_rows' => count($rows),
+                'success_count' => $successCount,
+                'failed_count' => count($errors),
+                'error_log' => $errors,
+            ]);
+
+            DB::commit();
+
+            return $log;
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    private function parseAikenBlock(string $block): array
+    {
+        $lines = array_values(array_filter(array_map('trim', explode("\n", $block)), static fn ($line) => $line !== ''));
+        $answerLine = null;
+        $options = [];
+        $questionLines = [];
+
+        foreach ($lines as $line) {
+            if (preg_match('/^ANSWER\s*:\s*([A-Z])$/i', $line, $matches)) {
+                $answerLine = strtoupper($matches[1]);
+                continue;
+            }
+
+            if (preg_match('/^([A-E])[\.\)]\s+(.+)$/i', $line, $matches)) {
+                $options[strtoupper($matches[1])] = trim($matches[2]);
+                continue;
+            }
+
+            $questionLines[] = $line;
+        }
+
+        if (empty($questionLines)) {
+            throw new RuntimeException('Question text is missing.');
+        }
+
+        if (count($options) < 2) {
+            throw new RuntimeException('At least two answer options are required.');
+        }
+
+        if (! $answerLine) {
+            throw new RuntimeException('ANSWER line is missing.');
+        }
+
+        if (! array_key_exists($answerLine, $options)) {
+            throw new RuntimeException('ANSWER key does not match available options.');
+        }
+
+        return [
+            'question_text' => trim(implode(' ', $questionLines)),
+            'options' => $options,
+            'correct_option' => $answerLine,
+        ];
+    }
+
+    private function persistMultipleChoiceQuestion(QuestionBank $bank, User $actor, array $payload, string $importSource): void
+    {
+        $question = Question::create([
+            'question_bank_id' => $bank->id,
+            'subject_id' => $bank->subject_id,
+            'created_by' => $actor->id,
+            'type' => Question::TYPE_MULTIPLE_CHOICE,
+            'question_text' => $payload['question_text'],
+            'question_text_en' => null,
+            'explanation' => null,
+            'explanation_en' => null,
+            'points' => 1,
+            'difficulty' => 'medium',
+            'import_source' => $importSource,
+            'short_answer_key' => null,
+            'is_active' => true,
+        ]);
+
+        foreach ($payload['options'] as $key => $value) {
+            QuestionOption::create([
+                'question_id' => $question->id,
+                'option_key' => $key,
+                'option_text' => $value,
+                'option_text_en' => null,
+                'is_correct' => $key === $payload['correct_option'],
+            ]);
+        }
+    }
+
+    private function readCsvRows(UploadedFile $file): array
+    {
+        $handle = fopen($file->getRealPath(), 'rb');
+
+        if (! $handle) {
+            throw new RuntimeException('Unable to read uploaded CSV file.');
+        }
+
+        $header = fgetcsv($handle);
+        if (! $header) {
+            fclose($handle);
+            throw new RuntimeException('CSV header is missing.');
+        }
+
+        $header = array_map(static fn ($item) => strtolower(trim((string) $item)), $header);
+
+        $requiredHeaders = ['type', 'question_text', 'points', 'difficulty'];
+        foreach ($requiredHeaders as $column) {
+            if (! in_array($column, $header, true)) {
+                fclose($handle);
+                throw new RuntimeException("CSV missing required column: {$column}");
+            }
+        }
+
+        $rows = [];
+        while (($row = fgetcsv($handle)) !== false) {
+            if ($this->isCsvRowEmpty($row)) {
+                continue;
+            }
+
+            $assoc = [];
+            foreach ($header as $index => $column) {
+                $assoc[$column] = trim((string) ($row[$index] ?? ''));
+            }
+            $rows[] = $assoc;
+        }
+
+        fclose($handle);
+
+        return $rows;
+    }
+
+    private function persistCsvRow(QuestionBank $bank, User $actor, array $row): void
+    {
+        $type = strtolower($row['type'] ?? '');
+        $allowedTypes = [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_SHORT_ANSWER, Question::TYPE_ESSAY];
+
+        if (! in_array($type, $allowedTypes, true)) {
+            throw new RuntimeException('Invalid question type.');
+        }
+
+        $questionText = trim((string) ($row['question_text'] ?? ''));
+        if ($questionText === '') {
+            throw new RuntimeException('question_text is required.');
+        }
+
+        $points = (float) ($row['points'] ?? 1);
+        if ($points <= 0) {
+            throw new RuntimeException('points must be greater than zero.');
+        }
+
+        $difficulty = trim((string) ($row['difficulty'] ?? 'medium'));
+        if (! in_array($difficulty, ['easy', 'medium', 'hard'], true)) {
+            throw new RuntimeException('difficulty must be easy, medium, or hard.');
+        }
+
+        $shortAnswerKey = $type === Question::TYPE_SHORT_ANSWER
+            ? $this->normalizeText($row['short_answer_key'] ?? '')
+            : null;
+
+        if ($type === Question::TYPE_SHORT_ANSWER && $shortAnswerKey === null) {
+            throw new RuntimeException('short_answer_key is required for short_answer.');
+        }
+
+        $multipleChoicePayload = null;
+        if ($type === Question::TYPE_MULTIPLE_CHOICE) {
+            $multipleChoicePayload = $this->buildCsvMultipleChoicePayload($row);
+        }
+
+        $question = Question::create([
+            'question_bank_id' => $bank->id,
+            'subject_id' => $bank->subject_id,
+            'created_by' => $actor->id,
+            'type' => $type,
+            'question_text' => $questionText,
+            'question_text_en' => $this->nullable($row['question_text_en'] ?? null),
+            'explanation' => $this->nullable($row['explanation'] ?? null),
+            'explanation_en' => $this->nullable($row['explanation_en'] ?? null),
+            'points' => $points,
+            'difficulty' => $difficulty,
+            'import_source' => 'csv',
+            'short_answer_key' => $shortAnswerKey,
+            'is_active' => true,
+        ]);
+
+        if ($type === Question::TYPE_MULTIPLE_CHOICE) {
+            $this->persistCsvMultipleChoiceOptions($question, $multipleChoicePayload);
+        }
+    }
+
+    private function buildCsvMultipleChoicePayload(array $row): array
+    {
+        $keys = ['a', 'b', 'c', 'd', 'e'];
+        $options = [];
+
+        foreach ($keys as $key) {
+            $value = $this->nullable($row['option_'.$key] ?? null);
+            if ($value !== null) {
+                $optionKey = strtoupper($key);
+                $options[$optionKey] = $value;
+            }
+        }
+
+        if (count($options) < 2) {
+            throw new RuntimeException('Multiple choice needs at least two options.');
+        }
+
+        $correctOption = strtoupper(trim((string) ($row['correct_option'] ?? '')));
+        if ($correctOption === '' || ! isset($options[$correctOption])) {
+            throw new RuntimeException('correct_option must match one of provided option keys.');
+        }
+
+        return ['options' => $options, 'correct_option' => $correctOption];
+    }
+
+    private function persistCsvMultipleChoiceOptions(Question $question, array $payload): void
+    {
+        $options = $payload['options'];
+        $correctOption = $payload['correct_option'];
+
+        foreach ($options as $key => $text) {
+            QuestionOption::create([
+                'question_id' => $question->id,
+                'option_key' => $key,
+                'option_text' => $text,
+                'option_text_en' => null,
+                'is_correct' => $key === $correctOption,
+            ]);
+        }
+    }
+
+    private function isCsvRowEmpty(array $row): bool
+    {
+        foreach ($row as $item) {
+            if (trim((string) $item) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function nullable(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normalizeText(string $text): ?string
+    {
+        $normalized = strtolower(trim(preg_replace('/\s+/u', ' ', $text) ?? ''));
+
+        return $normalized === '' ? null : $normalized;
+    }
+}

@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('school_classes', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100);
-            $table->string('code', 30)->unique();
+            $table->string('code', 30)->unique()->nullable();
             $table->unsignedTinyInteger('grade_level')->nullable();
             $table->foreignId('homeroom_teacher_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

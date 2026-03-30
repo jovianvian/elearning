@@ -1,317 +1,126 @@
-# EduSasana LMS - Fondasi MVP E-Learning Sekolah
+# Teramia E-Learning (MVP Foundation)
 
-Project ini adalah implementasi awal aplikasi e-learning sekolah berbasis Laravel + MySQL dengan pendekatan Agile.
+Teramia E-Learning adalah aplikasi e-learning dan ujian online berbasis Laravel untuk **SMP Teramia**.
 
-## 1) Rekomendasi Nama Aplikasi
+Stack utama:
+- Laravel
+- MySQL
+- Blade + Tailwind CSS
+- Bilingual locale (`id`, `en`)
 
-Pilihan nama:
-1. EduSasana
-2. KelasNusa
-3. SkoolaHub
-4. Belajarin
-5. CiptaKelas
-6. RuangDidik
-7. ScolaOne
-8. KelasPintar+
+## MVP Scope
+Sudah mencakup:
+- Multi-role auth: `Super Admin`, `Admin`, `Principal`, `Teacher`, `Student`
+- Login rules:
+  - Student login via `NIS`, default password = NIS, first-login force change password
+  - Teacher login via `NIP` atau `username`
+  - Admin/Super Admin/Principal login via `username` atau `email`
+- Forgot/reset password via email
+- App settings & branding
+- Academic year, semester, class, subject, user management
+- Student-class assignment, teacher-subject assignment
+- Course management (multi teacher, auto expose student by class via snapshot)
+- Question bank & question CRUD
+- Import question:
+  - AIKEN (MCQ)
+  - CSV (MCQ, short answer, essay)
+- Exam engine:
+  - schedule, timer, shuffle, auto submit
+  - objective auto-grade + essay manual grade
+  - manual result publish by teacher/admin/super admin
+- Notifications dashboard
+- Reports MVP
+- Suspicious activity logging
+- Audit logs
+- Soft delete + restore center
+- Localization base (ID/EN)
 
-Nama terbaik: **EduSasana**
-- Modern dan profesional
-- Relevan dengan konteks pendidikan formal
-- Mudah di-branding untuk sekolah
-- Cukup unik untuk identitas produk jangka panjang
+## Requirements
+- PHP 8.2+
+- Composer 2+
+- MySQL 8+ / MariaDB compatible
 
-## 2) Deskripsi Singkat Aplikasi
-
-**EduSasana** membantu sekolah mengelola pembelajaran digital terpusat untuk admin, guru, dan siswa.
-
-Masalah yang diselesaikan:
-- Data pembelajaran tersebar (chat, dokumen, dan catatan manual)
-- Sulit memantau kelas, materi, dan akses pengguna
-- Tidak ada alur digital standar untuk aktivitas belajar dasar
-
-Manfaat:
-- Satu portal login untuk semua peran
-- Data terstruktur (kelas, mapel, materi)
-- Fondasi scalable untuk fitur lanjutan (tugas, penilaian, ujian online)
-
-## 3) Fitur Inti MVP
-
-Prioritas MVP tahap pertama:
-1. Login berbasis database (email + password)
-2. Role user dasar (`admin`, `guru`, `siswa`)
-3. Dashboard sederhana per role
-4. Struktur data awal: users, roles, classes, subjects, materials
-5. Navigasi umum aplikasi (sidebar + topbar + logout)
-
-Roadmap tahap berikutnya:
-- CRUD kelas/mapel/materi
-- Penugasan siswa
-- Tracking progres belajar
-
-## 4) Agile Planning Awal
-
-### Product Vision
-Menyediakan platform e-learning sekolah yang stabil, sederhana, dan siap dikembangkan bertahap tanpa over-engineering di fase awal.
-
-### User Roles
-- Admin: kelola pengguna, kelas, struktur akademik
-- Guru: kelola materi dan aktivitas kelas
-- Siswa: akses materi dan dashboard pembelajaran
-
-### User Stories Utama
-- Sebagai admin, saya ingin login dan melihat ringkasan data sekolah.
-- Sebagai guru, saya ingin login dan melihat jumlah mapel/materi saya.
-- Sebagai siswa, saya ingin login dan melihat materi yang tersedia.
-
-### Product Backlog Awal
-1. Setup project Laravel + MySQL
-2. Authentication login/logout
-3. Role-based authorization
-4. Dashboard per role
-5. Migration tabel inti
-6. Seeder role + akun awal
-7. UI layout umum
-
-### Sprint Planning (3 Sprint)
-
-**Sprint 1 (Fondasi Teknis)**
-- Setup Laravel
-- Konfigurasi MySQL
-- Migration users/roles dan relasi role
-- Seeder role + akun default
-
-**Sprint 2 (Akses & Navigasi)**
-- Auth controller (login/logout)
-- Middleware role
-- Routing per role
-- Layout aplikasi (login + shell dashboard)
-
-**Sprint 3 (Akademik Dasar)**
-- Migration classes, subjects, materials
-- Relasi model
-- Dashboard statistik awal
-- Hardening dan smoke test
-
-## 5) Diagram Perancangan (Teks)
-
-### Use Case Diagram (Teks)
-**Actor: Admin**
-- Login
-- Akses dashboard admin
-- Monitoring data user/kelas/mapel/materi
-
-**Actor: Guru**
-- Login
-- Akses dashboard guru
-- Monitoring mapel dan materi yang dibuat
-
-**Actor: Siswa**
-- Login
-- Akses dashboard siswa
-- Melihat ringkasan materi tersedia
-
-### Activity Diagram Login (Teks)
-1. User buka halaman login
-2. User isi email + password
-3. Sistem validasi input
-4. Sistem cek kredensial ke database
-5. Jika gagal: kembali ke login + pesan error
-6. Jika sukses: regenerate session
-7. Sistem redirect ke dashboard sesuai role
-
-### ERD Awal (Teks)
-- `roles (1) --- (N) users`
-- `users (1) --- (N) subjects` melalui `teacher_id`
-- `users (1) --- (N) materials` melalui `created_by`
-- `users (1) --- (N) school_classes` melalui `homeroom_teacher_id` (nullable)
-- `school_classes (1) --- (N) subjects`
-- `subjects (1) --- (N) materials`
-
-### Flow Proses Umum Aplikasi
-1. User login
-2. Middleware `auth` cek sesi
-3. Middleware `role` cek hak akses per endpoint
-4. User masuk dashboard role masing-masing
-5. User navigasi modul dasar (kelas, mapel, materi)
-
-## 6) Desain Database Awal MySQL
-
-### Tabel `roles`
-- `id` BIGINT PK
-- `name` VARCHAR(50) UNIQUE (`admin|guru|siswa`)
-- `display_name` VARCHAR(100)
-- `timestamps`
-
-### Tabel `users`
-- `id` BIGINT PK
-- `name` VARCHAR(255)
-- `email` VARCHAR(255) UNIQUE
-- `role_id` BIGINT FK -> `roles.id` (nullable on delete)
-- `email_verified_at` TIMESTAMP nullable
-- `password` VARCHAR(255)
-- `remember_token`
-- `timestamps`
-
-### Tabel `school_classes`
-- `id` BIGINT PK
-- `name` VARCHAR(100)
-- `code` VARCHAR(30) UNIQUE
-- `grade_level` TINYINT nullable
-- `homeroom_teacher_id` BIGINT FK -> `users.id` nullable
-- `timestamps`
-
-### Tabel `subjects`
-- `id` BIGINT PK
-- `school_class_id` BIGINT FK -> `school_classes.id`
-- `teacher_id` BIGINT FK -> `users.id` nullable
-- `name` VARCHAR(100)
-- `code` VARCHAR(30) nullable
-- `description` TEXT nullable
-- `timestamps`
-
-### Tabel `materials`
-- `id` BIGINT PK
-- `subject_id` BIGINT FK -> `subjects.id`
-- `created_by` BIGINT FK -> `users.id`
-- `title` VARCHAR(150)
-- `content` TEXT nullable
-- `attachment_path` VARCHAR(255) nullable
-- `published_at` TIMESTAMP nullable
-- `timestamps`
-
-## 7) Arsitektur Laravel Awal
-
-### Model
-- `User`
-- `Role`
-- `SchoolClass`
-- `Subject`
-- `Material`
-
-### Controller
-- `AuthController` (show login, login attempt, logout)
-- `DashboardController` (redirect role + dashboard admin/guru/siswa)
-
-### Middleware
-- `auth` (built-in)
-- `role` (custom `RoleMiddleware`)
-
-### Route Utama
-- `GET /login`
-- `POST /login`
-- `POST /logout`
-- `GET /dashboard`
-- `GET /admin/dashboard`
-- `GET /guru/dashboard`
-- `GET /siswa/dashboard`
-
-### Blade/Layout
-- `resources/views/auth/login.blade.php`
-- `resources/views/layouts/app.blade.php`
-- `resources/views/dashboard/admin.blade.php`
-- `resources/views/dashboard/guru.blade.php`
-- `resources/views/dashboard/siswa.blade.php`
-
-## 8) Implementasi Awal yang Sudah Dibuat
-
-Sudah diimplementasikan:
-- Login berbasis DB (`Auth::attempt`)
-- Role user dasar admin/guru/siswa
-- Redirect dashboard berdasarkan role
-- Dashboard sederhana per role
-- UI umum aplikasi (login, sidebar, topbar, logout)
-- Seeder akun awal
-
-Belum (roadmap):
-- Upload tugas
-- Penilaian detail
-- Ujian online
-- Notifikasi lanjutan
-
-## 9) Gambaran UI/UX (Wireframe Teks)
-
-### Login
-- Card di tengah layar
-- Input email/password + checkbox remember
-- Error state jelas
-- Catatan akun demo
-
-### Dashboard Admin
-- Sidebar menu kiri
-- Topbar user info + badge role
-- Card statistik user/kelas/mapel/materi
-
-### Dashboard Guru
-- Struktur sama dengan admin agar konsisten
-- Statistik mapel diampu, materi dibuat, kelas terlibat
-
-### Dashboard Siswa
-- Struktur sama
-- Statistik materi tersedia, mapel aktif, kelas aktif
-
-### Nuansa Visual
-- Dominan biru sekolah (`#0f4c81`)
-- Background terang dan bersih
-- Komponen rounded, kontras rapi, mobile-friendly
-
-## 10) Output Teknis Awal
-
-### Struktur Module Penting
-```text
-app/
-  Http/
-    Controllers/
-      AuthController.php
-      DashboardController.php
-    Middleware/
-      RoleMiddleware.php
-  Models/
-    User.php
-    Role.php
-    SchoolClass.php
-    Subject.php
-    Material.php
-database/
-  migrations/
-  seeders/
-resources/views/
-  auth/login.blade.php
-  layouts/app.blade.php
-  dashboard/{admin,guru,siswa}.blade.php
-routes/web.php
+## Installation
+```bash
+git clone https://github.com/jovianvian/elearning.git
+cd elearning
+composer install
+cp .env.example .env
+php artisan key:generate
 ```
 
-### Migration yang Dibuat Lebih Dulu
-1. `create_roles_table`
-2. `add_role_id_to_users_table`
-3. `create_school_classes_table`
-4. `create_subjects_table`
-5. `create_materials_table`
+## Environment Setup (`.env`)
+```env
+APP_NAME="Teramia E-Learning"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
 
-### Route Awal
-- `login`, `login.attempt`, `logout`
-- `dashboard`, `dashboard.admin`, `dashboard.guru`, `dashboard.siswa`
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=teramia_elearning
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-### Langkah Implementasi Bertahap
-1. `composer install`
-2. `cp .env.example .env` lalu set MySQL
-3. `php artisan key:generate`
-4. `php artisan migrate:fresh --seed`
-5. `php artisan serve`
+## Database Setup
+```bash
+php artisan migrate:fresh --seed
+```
 
-## 11) Kode Awal Inti yang Sudah Siap
+## Run Application
+```bash
+php artisan serve
+```
+App URL: `http://127.0.0.1:8000`
 
-Sudah tersedia dalam project ini:
-- Konfigurasi `.env.example` untuk MySQL
-- Migration `roles` + relasi ke `users`
-- Auth login/logout sederhana
-- `RoleMiddleware` untuk pembatasan akses
-- Dashboard basic per role
-- Layout Blade dasar sebagai fondasi jangka panjang
+## Default Accounts (Seeder)
+- Super Admin
+  - username: `superadmin`
+  - email: `superadmin@teramia.sch.id`
+  - password: `Password123!`
+- Admin
+  - username: `admin`
+  - email: `admin@teramia.sch.id`
+  - password: `Password123!`
+- Principal
+  - username: `principal`
+  - email: `principal@teramia.sch.id`
+  - password: `Password123!`
+- Teacher examples
+  - `teacher.mtk` / `teacher.mtk@teramia.sch.id` / password `Password123!`
+  - `teacher.ipa` / `teacher.ipa@teramia.sch.id` / password `Password123!`
+  - `teacher.big` / `teacher.big@teramia.sch.id` / password `Password123!`
+- Student examples
+  - NIS: `7001` (password default: `7001`, first login must change password)
+  - NIS: `7002` (password default: `7002`, first login must change password)
+  - NIS: `7003` (password default: `7003`, first login must change password)
 
-## Akun Demo
+## Main Route Modules
+- `/dashboard`
+- `/users`, `/classes`, `/subjects`, `/courses`
+- `/question-banks`, `/question-imports`
+- `/exams`, `/exam-grading`, `/student-exams`
+- `/reports`
+- `/notifications`
+- `/super-admin/audit-logs`
+- `/super-admin/login-logs`
+- `/super-admin/restore-center`
+- `/suspicious-activities`
 
-Password semua akun demo: `password123`
-- `admin@edusasana.sch.id`
-- `guru@edusasana.sch.id`
-- `siswa@edusasana.sch.id`
+## Core Tables
+- Access/identity: `roles`, `users`, `user_profiles`, `login_logs`
+- Settings/academic: `app_settings`, `academic_years`, `semesters`
+- Structure: `school_classes`, `subjects`, `class_students`, `subject_teachers`
+- Course: `courses`, `course_teachers`, `course_students`
+- Question bank: `question_banks`, `questions`, `question_options`, `question_import_logs`
+- Exams: `exams`, `exam_questions`, `exam_attempts`, `exam_attempt_answers`, `exam_publication_logs`
+- Monitoring/logs: `exam_session_logs`, `tab_switch_logs`, `suspicious_activity_logs`, `activity_logs`, `restore_logs`
+- Notifications: `notifications`, `user_notifications`
+
+## Verification Checklist
+Lihat dokumen:
+- `docs/phase-1-foundation.md` s/d `docs/phase-9-monitoring-audit-restore.md`
+- `docs/final-verification-checklist.md`
+

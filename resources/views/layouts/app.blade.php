@@ -1,161 +1,142 @@
-<!DOCTYPE html>
-<html lang="id">
+<!doctype html>
+<html lang="{{ app()->getLocale() }}" class="h-full">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'EduSasana LMS' }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $title ?? 'Teramia E-Learning' }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    },
+                    colors: {
+                        primary: '#1D4ED8',
+                        deep: '#1E3A8A',
+                        yellowx: '#FACC15',
+                        redx: '#DC2626',
+                        skyx: '#38BDF8',
+                        successx: '#16A34A',
+                        surface: '#FFFFFF',
+                        appbg: '#F8FAFC',
+                        ink: '#0F172A'
+                    },
+                    boxShadow: {
+                        soft: '0 10px 30px -15px rgba(2, 6, 23, 0.18)'
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
-        :root {
-            --bg: #f4f7fb;
-            --surface: #ffffff;
-            --primary: #0f4c81;
-            --accent: #2b9348;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --border: #dbe4ef;
+        [x-cloak]{display:none!important}
+        .tera-card{border-radius: 1rem; border:1px solid rgb(226 232 240 / 1); background: #fff; box-shadow: 0 10px 30px -15px rgba(2,6,23,.14);}
+        .tera-card-body{padding: 1.25rem;}
+        .tera-btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.75rem;padding:.6rem 1rem;font-size:.875rem;font-weight:600;transition:.2s}
+        .tera-btn-primary{background:#1D4ED8;color:#fff}
+        .tera-btn-primary:hover{background:#1E40AF}
+        .tera-btn-muted{background:#fff;color:#0F172A;border:1px solid rgb(203 213 225 / 1)}
+        .tera-btn-danger{background:#DC2626;color:#fff}
+        .tera-input,.tera-select,.tera-textarea{
+            width:100%;border-radius:.75rem;border:1px solid rgb(203 213 225 / 1);background:#fff;
+            padding:.625rem .75rem;font-size:.875rem;color:#0F172A;outline:none;transition:.2s
         }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(130deg, #f4f7fb, #eaf2ff);
-            color: var(--text);
+        .tera-input:focus,.tera-select:focus,.tera-textarea:focus{
+            border-color:#1D4ED8; box-shadow:0 0 0 3px rgb(29 78 216 / .15)
         }
-        .app-shell {
-            min-height: 100vh;
-            display: grid;
-            grid-template-columns: 260px 1fr;
-        }
-        .sidebar {
-            background: #0d3b66;
-            color: #fff;
-            padding: 1.5rem 1rem;
-        }
-        .brand {
-            margin-bottom: 2rem;
-        }
-        .brand h1 {
-            font-size: 1.25rem;
-            margin: 0;
-        }
-        .brand p {
-            margin: .3rem 0 0;
-            color: #c7ddf4;
-            font-size: .85rem;
-        }
-        .nav-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .nav-list li {
-            margin-bottom: .6rem;
-        }
-        .nav-list a {
-            display: block;
-            text-decoration: none;
-            color: #e7f2ff;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            padding: .65rem .8rem;
-        }
-        .main {
-            padding: 1.5rem;
-        }
-        .topbar {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: .8rem 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .badge {
-            padding: .25rem .6rem;
-            border-radius: 999px;
-            font-size: .8rem;
-            background: #eaf2ff;
-            color: var(--primary);
-            border: 1px solid #c7ddf4;
-        }
-        .content-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.2rem;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: .8rem;
-        }
-        .metric {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: .8rem;
-            background: #fdfefe;
-        }
-        .metric .label {
-            color: var(--muted);
-            font-size: .82rem;
-            margin-bottom: .2rem;
-        }
-        .metric .value {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        .btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: .5rem .8rem;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        @media (max-width: 900px) {
-            .app-shell { grid-template-columns: 1fr; }
-            .sidebar { border-bottom: 1px solid rgba(255,255,255,.2); }
-        }
+        .tera-label{display:block;font-size:.8125rem;font-weight:600;color:#334155;margin-bottom:.35rem}
+        .tera-h1{font-size:1.35rem;line-height:1.9rem;font-weight:800;color:#0F172A}
+        .tera-sub{font-size:.825rem;color:#64748b}
+        .tera-table-wrap{border-radius:1rem;border:1px solid rgb(226 232 240 / 1);background:#fff;overflow:hidden;box-shadow:0 10px 30px -15px rgba(2,6,23,.10)}
+        .tera-table{width:100%;font-size:.875rem}
+        .tera-table thead{background:#f8fafc;color:#475569}
+        .tera-table th{font-weight:700;font-size:.75rem;letter-spacing:.02em;text-transform:uppercase;padding:.8rem .9rem}
+        .tera-table td{padding:.85rem .9rem;border-top:1px solid rgb(241 245 249 / 1);vertical-align:top}
+        .tera-table tbody tr:hover{background:#f8fafc}
+        .tera-badge{display:inline-flex;align-items:center;padding:.22rem .55rem;border-radius:9999px;font-size:.72rem;font-weight:700}
+        .tera-page{max-width:1280px;margin:0 auto}
     </style>
 </head>
-<body>
-<div class="app-shell">
-    <aside class="sidebar">
-        <div class="brand">
-            <h1>EduSasana LMS</h1>
-            <p>E-learning Sekolah</p>
-        </div>
-        <ul class="nav-list">
-            @if(auth()->user()?->role?->name === 'admin')
-                <li><a href="{{ route('dashboard.admin') }}">Dashboard Admin</a></li>
-            @elseif(auth()->user()?->role?->name === 'guru')
-                <li><a href="{{ route('dashboard.guru') }}">Dashboard Guru</a></li>
-            @elseif(auth()->user()?->role?->name === 'siswa')
-                <li><a href="{{ route('dashboard.siswa') }}">Dashboard Siswa</a></li>
-            @endif
-            <li><a href="#">Kelas</a></li>
-            <li><a href="#">Mata Pelajaran</a></li>
-            <li><a href="#">Materi</a></li>
-        </ul>
-    </aside>
-    <main class="main">
-        <div class="topbar">
-            <div>
-                <strong>{{ auth()->user()->name }}</strong>
-                <span class="badge">{{ strtoupper(auth()->user()->role->name ?? '-') }}</span>
+<body class="h-full bg-appbg text-ink antialiased">
+<div x-data="{ sidebarOpen: false, sidebarMini: false }" class="min-h-screen">
+    <div x-show="sidebarOpen" x-cloak class="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" @click="sidebarOpen = false"></div>
+
+    @include('layouts.partials.sidebar')
+
+    <div class="lg:pl-72 transition-all duration-300" :class="sidebarMini ? 'lg:pl-24' : 'lg:pl-72'">
+        @include('layouts.partials.topbar')
+
+        <main class="px-4 sm:px-6 py-6 sm:py-8">
+            <div class="tera-page space-y-5">
+                @include('layouts.partials.flash')
+                @yield('content')
             </div>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button class="btn" type="submit">Logout</button>
-            </form>
-        </div>
-        @yield('content')
-    </main>
+        </main>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
+
+        document.querySelectorAll('input[type="datetime-local"], .js-flatpickr').forEach((el) => {
+            flatpickr(el, { enableTime: true, dateFormat: 'Y-m-d H:i' });
+        });
+
+        document.querySelectorAll('form').forEach((form) => {
+            const methodInput = form.querySelector('input[name="_method"]');
+            if (methodInput && methodInput.value.toUpperCase() === 'DELETE') {
+                form.addEventListener('submit', (e) => {
+                    if (form.dataset.confirmed === '1') return;
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Hapus data ini?',
+                        text: 'Aksi ini dapat dipulihkan dari Restore Center untuk entitas tertentu.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#DC2626',
+                        cancelButtonColor: '#334155',
+                        confirmButtonText: 'Ya, Hapus',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.dataset.confirmed = '1';
+                            form.submit();
+                        }
+                    });
+                });
+            }
+        });
+
+        document.querySelectorAll('[data-chart]').forEach((canvas) => {
+            try {
+                if (canvas.dataset.chartInitialized === '1') {
+                    return;
+                }
+
+                const payload = JSON.parse(canvas.dataset.chart);
+                const existing = Chart.getChart(canvas);
+                if (existing) {
+                    existing.destroy();
+                }
+
+                const chart = new Chart(canvas, payload);
+                canvas._teraChart = chart;
+                canvas.dataset.chartInitialized = '1';
+            } catch (err) {}
+        });
+    });
+</script>
 </body>
 </html>

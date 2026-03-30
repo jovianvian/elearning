@@ -1,13 +1,10 @@
 @extends('layouts.app', ['title' => 'Dashboard Guru'])
 
 @section('content')
-<div class="content-card">
-    <h2>Dashboard Guru</h2>
-    <p>Ringkasan aktivitas mengajar dan materi pembelajaran.</p>
-    <div class="grid">
-        <div class="metric"><div class="label">Mapel Diampu</div><div class="value">{{ $stats['mapel_diampu'] }}</div></div>
-        <div class="metric"><div class="label">Materi Dibuat</div><div class="value">{{ $stats['materi_dibuat'] }}</div></div>
-        <div class="metric"><div class="label">Kelas Wali/Libat</div><div class="value">{{ $stats['kelas_terlibat'] }}</div></div>
-    </div>
+<h1 class="h4 mb-3">Dashboard Guru</h1>
+<div class="row g-3">
+    <div class="col-md-4"><div class="card"><div class="card-body"><small>Mapel Diampu</small><h3>{{ $stats['mapel_diampu'] }}</h3></div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body"><small>Materi Dibuat</small><h3>{{ $stats['materi_dibuat'] }}</h3></div></div></div>
+    <div class="col-md-4"><div class="card"><div class="card-body"><small>Kelas Terlibat</small><h3>{{ $stats['kelas_terlibat'] }}</h3></div></div></div>
 </div>
 @endsection

@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('school_class_id')->constrained('school_classes')->cascadeOnDelete();
-            $table->foreignId('teacher_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('name', 100);
+            $table->string('name_id', 100);
+            $table->string('name_en', 100)->nullable();
             $table->string('code', 30)->nullable();
             $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

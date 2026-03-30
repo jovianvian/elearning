@@ -2,32 +2,42 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subject extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
-        'school_class_id',
-        'teacher_id',
-        'name',
+        'name_id',
+        'name_en',
         'code',
         'description',
+        'is_active',
     ];
 
-    public function schoolClass(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(SchoolClass::class);
+        return ['is_active' => 'boolean'];
     }
 
-    public function teacher(): BelongsTo
+    public function teachers(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsToMany(User::class, 'subject_teachers', 'subject_id', 'teacher_id')
+            ->withPivot('academic_year_id', 'is_active')
+            ->withTimestamps();
     }
 
-    public function materials(): HasMany
+    public function questionBanks(): HasMany
     {
-        return $this->hasMany(Material::class);
+        return $this->hasMany(QuestionBank::class);
+    }
+
+    public function courses(): HasMany
+    {
+        return $this->hasMany(Course::class);
     }
 }
