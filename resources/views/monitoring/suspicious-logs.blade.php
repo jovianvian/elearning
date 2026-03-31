@@ -1,10 +1,7 @@
-@extends('layouts.app', ['title' => 'Suspicious Activity Logs'])
+@extends('layouts.app', ['title' => 'Suspicious Logs'])
 
 @section('content')
-    <div>
-        <h2 class="text-xl font-semibold">Suspicious Activity Logs</h2>
-        <p class="text-sm text-slate-500">Monitoring events during exam attempts.</p>
-    </div>
+    <x-ui.page-header title="Suspicious Activity Logs" subtitle="Monitor flagged exam behavior, session anomalies, and related activity." />
 
     <div class="bg-white border rounded-xl overflow-x-auto">
         <table class="w-full text-sm">
@@ -41,4 +38,3 @@
 
     {{ $logs->links() }}
 @endsection
-

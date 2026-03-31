@@ -1,10 +1,7 @@
 @extends('layouts.app', ['title' => 'Audit Logs'])
 
 @section('content')
-    <div>
-        <h2 class="text-xl font-semibold">Audit Logs</h2>
-        <p class="text-sm text-slate-500">Critical action history across important entities.</p>
-    </div>
+    <x-ui.page-header title="System Audit Logs" subtitle="Track important system actions, changes, and restore history." />
 
     <div class="bg-white border rounded-xl overflow-x-auto">
         <table class="w-full text-sm">
@@ -35,4 +32,3 @@
 
     {{ $logs->links() }}
 @endsection
-

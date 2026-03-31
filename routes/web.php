@@ -27,6 +27,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
+Route::post('/locale/{locale}', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -66,7 +67,6 @@ Route::middleware(['auth', 'ensure.password.changed'])->group(function (): void 
         ->middleware('role:student')
         ->name('dashboard.student');
 
-    Route::post('/locale/{locale}', [LocaleController::class, 'update'])->name('locale.update');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('/notifications/{userNotification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');

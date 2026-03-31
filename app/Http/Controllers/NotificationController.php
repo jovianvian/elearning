@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserNotification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class NotificationController extends Controller
@@ -19,7 +21,7 @@ class NotificationController extends Controller
         return view('notifications.index', compact('notifications'));
     }
 
-    public function markRead(UserNotification $userNotification): RedirectResponse
+    public function markRead(Request $request, UserNotification $userNotification): RedirectResponse|JsonResponse
     {
         abort_unless((int) $userNotification->user_id === (int) auth()->id(), 403);
 
@@ -30,10 +32,14 @@ class NotificationController extends Controller
             ]);
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Notification marked as read.']);
+        }
+
         return back();
     }
 
-    public function markAllRead(): RedirectResponse
+    public function markAllRead(Request $request): RedirectResponse|JsonResponse
     {
         UserNotification::query()
             ->where('user_id', auth()->id())
@@ -43,7 +49,10 @@ class NotificationController extends Controller
                 'read_at' => now(),
             ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'All notifications marked as read.']);
+        }
+
         return back()->with('success', 'All notifications marked as read.');
     }
 }
-

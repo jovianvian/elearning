@@ -1,10 +1,7 @@
 @extends('layouts.app', ['title' => 'Reports'])
 
 @section('content')
-    <div>
-        <h2 class="text-xl font-semibold">Reports</h2>
-        <p class="text-sm text-slate-500">MVP reports: exam recap, class/subject result summaries, login and suspicious activity.</p>
-    </div>
+    <x-ui.page-header title="Reports & Analytics" subtitle="Review exam performance and operational summaries." />
 
     <div class="bg-white border rounded-xl p-4">
         <h3 class="font-semibold mb-3">Exam Recap by Status</h3>
@@ -89,4 +86,3 @@
         </div>
     </div>
 @endsection
-

@@ -1,55 +1,53 @@
 @extends('layouts.app', ['title' => 'Restore Center'])
 
 @section('content')
-    <div>
-        <h2 class="text-xl font-semibold">Restore Center</h2>
-        <p class="text-sm text-slate-500">Restore soft-deleted entities (Super Admin only).</p>
-    </div>
+    <x-ui.page-header title="Restore Center" subtitle="Review deleted records and restore important data safely." />
 
-    <div class="bg-white border rounded-xl p-4">
+    <div class="tera-card">
+        <div class="tera-card-body">
         <form method="GET" class="flex gap-2 items-center">
-            <label class="text-sm">Entity</label>
-            <select name="entity" class="rounded border-slate-300 text-sm">
+            <label class="tera-label !mb-0">{{ __('ui.entity') }}</label>
+            <select name="entity" class="tera-select !w-auto !py-2 !text-sm">
                 @foreach($map as $key => $class)
                     <option value="{{ $key }}" @selected($entity === $key)>{{ $key }}</option>
                 @endforeach
             </select>
-            <button class="px-3 py-1.5 border rounded text-sm">Filter</button>
+            <button class="tera-btn tera-btn-primary !py-2 !px-3 !text-sm">{{ __('ui.filter') }}</button>
         </form>
+        </div>
     </div>
 
-    <div class="bg-white border rounded-xl overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-slate-600">
+    <div class="tera-table-wrap">
+        <table class="tera-table">
+            <thead>
             <tr>
-                <th class="p-3 text-left">ID</th>
-                <th class="p-3 text-left">Label</th>
-                <th class="p-3 text-left">Deleted At</th>
-                <th class="p-3 text-right">Action</th>
+                <th class="text-left">ID</th>
+                <th class="text-left">{{ __('ui.label') }}</th>
+                <th class="text-left">{{ __('ui.deleted_at') }}</th>
+                <th class="text-right">{{ __('ui.action') }}</th>
             </tr>
             </thead>
             <tbody>
             @forelse($items as $item)
-                <tr class="border-t border-slate-100">
-                    <td class="p-3">{{ $item->id }}</td>
-                    <td class="p-3">
+                <tr>
+                    <td>{{ $item->id }}</td>
+                    <td>
                         {{ $item->title ?? $item->name ?? $item->name_id ?? $item->full_name ?? $item->username ?? 'Item #'.$item->id }}
                     </td>
-                    <td class="p-3">{{ $item->deleted_at?->format('d M Y H:i:s') }}</td>
-                    <td class="p-3 text-right">
+                    <td>{{ $item->deleted_at?->format('d M Y H:i:s') }}</td>
+                    <td class="text-right">
                         <form method="POST" action="{{ route('super-admin.restore-center.restore', ['entity' => $entity, 'id' => $item->id]) }}">
                             @csrf
-                            <button class="px-3 py-1.5 rounded bg-emerald-600 text-white text-xs" onclick="return confirm('Restore this item?')">Restore</button>
+                            <button class="tera-btn tera-btn-primary !px-3 !py-1.5 !text-xs" onclick="return confirm('{{ __('ui.restore_item_question') }}')">{{ __('ui.restore') }}</button>
                         </form>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="p-6 text-center text-slate-500">No deleted items in this entity.</td></tr>
+                <tr><td colspan="4" class="py-6 text-center text-slate-500">{{ __('ui.no_deleted_items_entity') }}</td></tr>
             @endforelse
             </tbody>
         </table>
     </div>
 
-    {{ $items->links() }}
+    <div class="mt-4">{{ $items->links() }}</div>
 @endsection
-

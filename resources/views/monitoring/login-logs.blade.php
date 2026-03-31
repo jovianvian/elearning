@@ -1,10 +1,7 @@
 @extends('layouts.app', ['title' => 'Login Logs'])
 
 @section('content')
-    <div>
-        <h2 class="text-xl font-semibold">Login Logs</h2>
-        <p class="text-sm text-slate-500">Authentication history and session information.</p>
-    </div>
+    <x-ui.page-header title="Login Activity Logs" subtitle="Monitor user login history, session access, and activity records." />
 
     <div class="bg-white border rounded-xl overflow-x-auto">
         <table class="w-full text-sm">
@@ -35,4 +32,3 @@
 
     {{ $logs->links() }}
 @endsection
-

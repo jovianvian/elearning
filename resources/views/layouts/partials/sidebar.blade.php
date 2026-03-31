@@ -1,88 +1,219 @@
 @php
     $role = auth()->user()->role->code ?? '';
-    $items = [];
+
+    $isActive = function (array $patterns): bool {
+        foreach ($patterns as $pattern) {
+            if (request()->routeIs($pattern)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    $makeLeaf = function (string $label, string $icon, string $route, array $patterns) use ($isActive) {
+        if (!\Illuminate\Support\Facades\Route::has($route)) {
+            return null;
+        }
+
+        return [
+            'type' => 'leaf',
+            'label' => $label,
+            'icon' => $icon,
+            'route' => $route,
+            'patterns' => $patterns,
+            'active' => $isActive($patterns),
+        ];
+    };
+
+    $makeTree = function (string $label, string $icon, array $children) {
+        $children = collect($children)->filter()->values()->all();
+        if (empty($children)) {
+            return null;
+        }
+
+        $active = collect($children)->contains(fn ($child) => (bool) ($child['active'] ?? false));
+
+        return [
+            'type' => 'tree',
+            'label' => $label,
+            'icon' => $icon,
+            'children' => $children,
+            'active' => $active,
+        ];
+    };
+
+    $sections = [];
 
     if ($role === 'super_admin') {
-        $items = [
-            ['label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard.super-admin'],
-            ['label' => 'Users', 'icon' => 'users', 'route' => 'users.index'],
-            ['label' => 'Classes', 'icon' => 'school', 'route' => 'classes.index'],
-            ['label' => 'Subjects', 'icon' => 'book-open', 'route' => 'subjects.index'],
-            ['label' => 'Assignments', 'icon' => 'git-branch-plus', 'route' => 'assignments.class-students.index'],
-            ['label' => 'Courses', 'icon' => 'folders', 'route' => 'courses.index'],
-            ['label' => 'Question Banks', 'icon' => 'library-big', 'route' => 'question-banks.index'],
-            ['label' => 'Question Imports', 'icon' => 'file-up', 'route' => 'question-imports.index'],
-            ['label' => 'Exams', 'icon' => 'notepad-text', 'route' => 'exams.index'],
-            ['label' => 'Grading', 'icon' => 'check-check', 'route' => 'exam-grading.index'],
-            ['label' => 'Reports', 'icon' => 'bar-chart-3', 'route' => 'reports.index'],
-            ['label' => 'Suspicious Logs', 'icon' => 'shield-alert', 'route' => 'suspicious-activities.index'],
-            ['label' => 'Audit Logs', 'icon' => 'scroll-text', 'route' => 'super-admin.audit-logs.index'],
-            ['label' => 'Login Logs', 'icon' => 'fingerprint', 'route' => 'super-admin.login-logs.index'],
-            ['label' => 'Restore Center', 'icon' => 'rotate-ccw', 'route' => 'super-admin.restore-center.index'],
-            ['label' => 'Academic Years', 'icon' => 'calendar-days', 'route' => 'super-admin.academic-years.index'],
-            ['label' => 'Semesters', 'icon' => 'calendar-range', 'route' => 'super-admin.semesters.index'],
-            ['label' => 'Settings', 'icon' => 'settings-2', 'route' => 'super-admin.settings.edit'],
+        $sections = [
+            [
+                'key' => 'dashboard',
+                'label' => 'Dashboard',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.super-admin', ['dashboard.super-admin']),
+                ],
+            ],
+            [
+                'key' => 'academic',
+                'label' => 'Academic',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Users', 'users', 'users.index', ['users.*']),
+                    $makeLeaf('Classes', 'school', 'classes.index', ['classes.*']),
+                    $makeLeaf('Subjects', 'book-open', 'subjects.index', ['subjects.*']),
+                    $makeTree('Assignments', 'git-branch-plus', [
+                        $makeLeaf('Class Student Assignments', 'user-check', 'assignments.class-students.index', ['assignments.class-students.*']),
+                        $makeLeaf('Subject Teacher Assignments', 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
+                    ]),
+                    $makeLeaf('Courses', 'folders', 'courses.index', ['courses.*', 'my-courses.*']),
+                ],
+            ],
+            [
+                'key' => 'assessment',
+                'label' => 'Assessment',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Question Banks', 'library-big', 'question-banks.index', ['question-banks.*']),
+                    $makeLeaf('Question Imports', 'file-up', 'question-imports.index', ['question-imports.*']),
+                    $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*', 'student-exams.*']),
+                    $makeLeaf('Grading', 'check-check', 'exam-grading.index', ['exam-grading.*']),
+                ],
+            ],
+            [
+                'key' => 'monitoring',
+                'label' => 'Monitoring & Reports',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
+                    $makeLeaf('Suspicious Logs', 'shield-alert', 'suspicious-activities.index', ['suspicious-activities.*']),
+                    $makeLeaf('Audit Logs', 'scroll-text', 'super-admin.audit-logs.index', ['super-admin.audit-logs.*']),
+                    $makeLeaf('Login Logs', 'fingerprint', 'super-admin.login-logs.index', ['super-admin.login-logs.*']),
+                ],
+            ],
+            [
+                'key' => 'system',
+                'label' => 'System',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Restore Center', 'rotate-ccw', 'super-admin.restore-center.index', ['super-admin.restore-center.*']),
+                    $makeLeaf('Academic Years', 'calendar-days', 'super-admin.academic-years.index', ['super-admin.academic-years.*']),
+                    $makeLeaf('Semesters', 'calendar-range', 'super-admin.semesters.index', ['super-admin.semesters.*']),
+                    $makeLeaf('Settings', 'settings-2', 'super-admin.settings.edit', ['super-admin.settings.*']),
+                ],
+            ],
         ];
     } elseif ($role === 'admin') {
-        $items = [
-            ['label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard.admin'],
-            ['label' => 'Users', 'icon' => 'users', 'route' => 'users.index'],
-            ['label' => 'Classes', 'icon' => 'school', 'route' => 'classes.index'],
-            ['label' => 'Subjects', 'icon' => 'book-open', 'route' => 'subjects.index'],
-            ['label' => 'Assignments', 'icon' => 'git-branch-plus', 'route' => 'assignments.class-students.index'],
-            ['label' => 'Courses', 'icon' => 'folders', 'route' => 'courses.index'],
-            ['label' => 'Question Banks', 'icon' => 'library-big', 'route' => 'question-banks.index'],
-            ['label' => 'Question Imports', 'icon' => 'file-up', 'route' => 'question-imports.index'],
-            ['label' => 'Exams', 'icon' => 'notepad-text', 'route' => 'exams.index'],
-            ['label' => 'Grading', 'icon' => 'check-check', 'route' => 'exam-grading.index'],
-            ['label' => 'Reports', 'icon' => 'bar-chart-3', 'route' => 'reports.index'],
+        $sections = [
+            [
+                'key' => 'dashboard',
+                'label' => 'Dashboard',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.admin', ['dashboard.admin']),
+                ],
+            ],
+            [
+                'key' => 'academic',
+                'label' => 'Academic',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Users', 'users', 'users.index', ['users.*']),
+                    $makeLeaf('Classes', 'school', 'classes.index', ['classes.*']),
+                    $makeLeaf('Subjects', 'book-open', 'subjects.index', ['subjects.*']),
+                    $makeTree('Assignments', 'git-branch-plus', [
+                        $makeLeaf('Class Student Assignments', 'user-check', 'assignments.class-students.index', ['assignments.class-students.*']),
+                        $makeLeaf('Subject Teacher Assignments', 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
+                    ]),
+                    $makeLeaf('Courses', 'folders', 'courses.index', ['courses.*']),
+                ],
+            ],
+            [
+                'key' => 'assessment',
+                'label' => 'Assessment',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Question Banks', 'library-big', 'question-banks.index', ['question-banks.*']),
+                    $makeLeaf('Question Imports', 'file-up', 'question-imports.index', ['question-imports.*']),
+                    $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*']),
+                    $makeLeaf('Grading', 'check-check', 'exam-grading.index', ['exam-grading.*']),
+                ],
+            ],
+            [
+                'key' => 'monitoring',
+                'label' => 'Monitoring & Reports',
+                'active' => false,
+                'items' => [
+                    $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
+                ],
+            ],
         ];
     } elseif ($role === 'principal') {
-        $items = [
-            ['label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard.principal'],
-            ['label' => 'Exams', 'icon' => 'notepad-text', 'route' => 'exams.index'],
-            ['label' => 'Reports', 'icon' => 'bar-chart-3', 'route' => 'reports.index'],
-        ];
+        $sections = [[
+            'key' => 'dashboard',
+            'label' => 'Dashboard',
+            'active' => false,
+            'items' => [
+                $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.principal', ['dashboard.principal']),
+                $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*']),
+                $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
+            ],
+        ]];
     } elseif ($role === 'teacher') {
-        $items = [
-            ['label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard.teacher'],
-            ['label' => 'My Courses', 'icon' => 'folders', 'route' => 'my-courses.index'],
-            ['label' => 'Question Banks', 'icon' => 'library-big', 'route' => 'question-banks.index'],
-            ['label' => 'Question Imports', 'icon' => 'file-up', 'route' => 'question-imports.index'],
-            ['label' => 'Exams', 'icon' => 'notepad-text', 'route' => 'exams.index'],
-            ['label' => 'Grading', 'icon' => 'check-check', 'route' => 'exam-grading.index'],
-            ['label' => 'Suspicious Logs', 'icon' => 'shield-alert', 'route' => 'suspicious-activities.index'],
-            ['label' => 'Reports', 'icon' => 'bar-chart-3', 'route' => 'reports.index'],
-            ['label' => 'Notifications', 'icon' => 'bell', 'route' => 'notifications.index'],
-        ];
+        $sections = [[
+            'key' => 'teacher-menu',
+            'label' => 'Teacher Menu',
+            'active' => false,
+            'items' => [
+                $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.teacher', ['dashboard.teacher']),
+                $makeLeaf('My Courses', 'folders', 'my-courses.index', ['my-courses.*']),
+                $makeLeaf('Question Banks', 'library-big', 'question-banks.index', ['question-banks.*']),
+                $makeLeaf('Question Imports', 'file-up', 'question-imports.index', ['question-imports.*']),
+                $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*']),
+                $makeLeaf('Grading', 'check-check', 'exam-grading.index', ['exam-grading.*']),
+                $makeLeaf('Suspicious Logs', 'shield-alert', 'suspicious-activities.index', ['suspicious-activities.*']),
+                $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
+                $makeLeaf('Notifications', 'bell', 'notifications.index', ['notifications.*']),
+            ],
+        ]];
     } elseif ($role === 'student') {
-        $items = [
-            ['label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard.student'],
-            ['label' => 'My Courses', 'icon' => 'folders', 'route' => 'my-courses.index'],
-            ['label' => 'My Exams', 'icon' => 'notepad-text', 'route' => 'student-exams.index'],
-            ['label' => 'Notifications', 'icon' => 'bell', 'route' => 'notifications.index'],
-        ];
+        $sections = [[
+            'key' => 'student-menu',
+            'label' => 'Student Menu',
+            'active' => false,
+            'items' => [
+                $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.student', ['dashboard.student']),
+                $makeLeaf('My Courses', 'folders', 'my-courses.index', ['my-courses.*']),
+                $makeLeaf('My Exams', 'notepad-text', 'student-exams.index', ['student-exams.*']),
+                $makeLeaf('Notifications', 'bell', 'notifications.index', ['notifications.*']),
+            ],
+        ]];
     }
-@endphp
 
-@php
-    $items = collect($items)
-        ->filter(fn (array $item) => isset($item['route']) && \Illuminate\Support\Facades\Route::has($item['route']))
-        ->values()
-        ->all();
+    $sections = collect($sections)->map(function ($section) {
+        $section['items'] = collect($section['items'])->filter()->values()->all();
+        $section['active'] = collect($section['items'])->contains(fn ($item) => (bool) ($item['active'] ?? false));
+        $section['key'] = $section['key'] ?? \Illuminate\Support\Str::slug($section['label'] ?? 'group');
+        return $section;
+    })->filter(fn ($section) => !empty($section['items']))->values()->all();
+
+    $menuBaseClasses = 'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
+    $menuActiveClasses = 'bg-white/22 text-white ring-1 ring-white/35 shadow-[inset_0_1px_0_rgba(255,255,255,.22),0_8px_18px_-14px_rgba(15,23,42,.85)]';
+    $menuIdleClasses = 'text-white/90 hover:bg-white/12 hover:text-white';
 @endphp
 
 <aside
-    class="fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-deep via-primary to-sky-700 text-white transition-all duration-300 -translate-x-full lg:translate-x-0"
-    :class="{'translate-x-0': sidebarOpen, 'w-24': sidebarMini, 'w-72': !sidebarMini}"
+    class="fixed top-0 bottom-0 left-0 z-50 w-[88vw] max-w-[20rem] lg:max-w-none m-0 pt-0 bg-gradient-to-b from-deep via-primary to-sky-700 text-white transition-all duration-300 -translate-x-full lg:translate-x-0 lg:w-[var(--shell-sidebar)] border-r"
+    style="border-color: var(--shell-divider);"
+    :class="{'translate-x-0': sidebarOpen, 'lg:w-[var(--shell-sidebar-mini)]': sidebarMini, 'lg:w-[var(--shell-sidebar)]': !sidebarMini}"
 >
     <div class="h-full flex flex-col">
-        <div class="px-4 py-5 border-b border-white/15 flex items-center justify-between">
+        <div class="shell-header px-4 border-b flex items-center justify-between" style="border-color: var(--shell-divider);">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-black text-lg">T</div>
+                <div class="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-black text-lg">{{ strtoupper(substr($teraApp['app_name'] ?? 'T', 0, 1)) }}</div>
                 <div x-show="!sidebarMini" x-cloak class="min-w-0">
-                    <p class="font-extrabold tracking-wide truncate">Teramia</p>
-                    <p class="text-[11px] text-white/70 truncate">E-Learning Platform</p>
+                    <p class="font-extrabold tracking-wide truncate">{{ $teraApp['app_name'] ?? config('app.name') }}</p>
+                    <p class="text-[11px] text-white/70 truncate">{{ __('ui.platform') }} {{ $teraApp['school_name'] ?? '' }}</p>
                 </div>
             </div>
             <button type="button" class="hidden lg:inline-flex p-2 rounded-lg hover:bg-white/15" @click="sidebarMini = !sidebarMini">
@@ -91,40 +222,77 @@
             </button>
         </div>
 
-        <div class="px-4 py-3 border-b border-white/15">
+        <div class="px-4 py-3 border-b" style="border-color: var(--shell-surface-border-on-sidebar);">
             <div class="text-xs text-white/70" x-show="!sidebarMini" x-cloak>{{ auth()->user()->role->name ?? '-' }}</div>
             <div class="font-semibold text-sm truncate" x-show="!sidebarMini" x-cloak>{{ auth()->user()->full_name ?? '-' }}</div>
         </div>
 
-        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-            @foreach($items as $item)
-                @php
-                    $currentRouteName = request()->route()?->getName() ?? '';
-                    $active = request()->routeIs($item['route'])
-                        || ($currentRouteName !== '' && str_starts_with($currentRouteName, explode('.', $item['route'])[0].'.'));
-                @endphp
-                <a
-                    href="{{ route($item['route']) }}"
-                    class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition"
-                    :class="sidebarMini ? 'justify-center px-2' : ''"
-                    @if($active)
-                        style="background: rgba(255,255,255,.18); font-weight:700;"
-                    @else
-                        style="color: rgba(255,255,255,.9);"
-                    @endif
-                >
-                    <i data-lucide="{{ $item['icon'] }}" class="w-[18px] h-[18px] shrink-0"></i>
-                    <span x-show="!sidebarMini" x-cloak>{{ $item['label'] }}</span>
-                </a>
+        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+            @foreach($sections as $section)
+                <div x-data="{ open: @js($section['active']) }" class="space-y-1">
+                    <button
+                        type="button"
+                        class="w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white/70 hover:text-white"
+                        :class="sidebarMini ? 'justify-center' : ''"
+                        @click="open = !open"
+                    >
+                        <span x-show="!sidebarMini" x-cloak>{{ $section['label'] }}</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" x-show="!sidebarMini" x-cloak></i>
+                    </button>
+
+                    <div x-show="open || sidebarMini" class="space-y-1">
+                        @foreach($section['items'] as $item)
+                            @if(($item['type'] ?? '') === 'leaf')
+                                <a
+                                    href="{{ route($item['route']) }}"
+                                    class="{{ $menuBaseClasses }} {{ $item['active'] ? $menuActiveClasses : $menuIdleClasses }}"
+                                    :class="sidebarMini ? 'justify-center px-2' : ''"
+                                    aria-current="{{ $item['active'] ? 'page' : 'false' }}"
+                                >
+                                    <i data-lucide="{{ $item['icon'] }}" class="w-[18px] h-[18px] shrink-0"></i>
+                                    <span x-show="!sidebarMini" x-cloak>{{ $item['label'] }}</span>
+                                </a>
+                            @else
+                                <div x-data="{ openSub: @js($item['active'] ?? false) }" class="space-y-1">
+                                    <button
+                                        type="button"
+                                        class="{{ $menuBaseClasses }} {{ ($item['active'] ?? false) ? $menuActiveClasses : $menuIdleClasses }} w-full justify-between"
+                                        :class="sidebarMini ? 'justify-center px-2' : ''"
+                                        @click="openSub = !openSub"
+                                    >
+                                        <span class="inline-flex items-center gap-3">
+                                            <i data-lucide="{{ $item['icon'] }}" class="w-[18px] h-[18px] shrink-0"></i>
+                                            <span x-show="!sidebarMini" x-cloak>{{ $item['label'] }}</span>
+                                        </span>
+                                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="openSub ? 'rotate-180' : ''" x-show="!sidebarMini" x-cloak></i>
+                                    </button>
+
+                                    <div x-show="openSub && !sidebarMini" class="ml-4 pl-2 border-l border-white/20 space-y-1">
+                                        @foreach($item['children'] as $child)
+                                            <a
+                                                href="{{ route($child['route']) }}"
+                                                class="{{ $menuBaseClasses }} {{ $child['active'] ? $menuActiveClasses : $menuIdleClasses }} !py-2 !text-[13px]"
+                                                aria-current="{{ $child['active'] ? 'page' : 'false' }}"
+                                            >
+                                                <i data-lucide="{{ $child['icon'] }}" class="w-4 h-4 shrink-0"></i>
+                                                <span>{{ $child['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
             @endforeach
         </nav>
 
-        <div class="p-4 border-t border-white/15">
+        <div class="p-4 border-t" style="border-color: var(--shell-surface-border-on-sidebar);">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="w-full tera-btn bg-white/15 hover:bg-white/25 text-white justify-center">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
-                    <span x-show="!sidebarMini" x-cloak>Logout</span>
+                    <span x-show="!sidebarMini" x-cloak>{{ __('ui.logout') }}</span>
                 </button>
             </form>
         </div>

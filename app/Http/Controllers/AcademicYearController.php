@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAcademicYearRequest;
 use App\Http\Requests\UpdateAcademicYearRequest;
 use App\Models\AcademicYear;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AcademicYearController extends Controller
@@ -22,7 +24,7 @@ class AcademicYearController extends Controller
         return view('academic-years.create');
     }
 
-    public function store(StoreAcademicYearRequest $request): RedirectResponse
+    public function store(StoreAcademicYearRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
 
@@ -30,17 +32,28 @@ class AcademicYearController extends Controller
             AcademicYear::query()->update(['is_active' => false]);
         }
 
-        AcademicYear::create($data);
+        $academicYear = AcademicYear::create($data);
 
-        return redirect()->route('academic-years.index')->with('success', 'Academic year created.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Academic year created.',
+                'data' => $academicYear,
+            ]);
+        }
+
+        return redirect()->route('super-admin.academic-years.index')->with('success', 'Academic year created.');
     }
 
-    public function edit(AcademicYear $academicYear): View
+    public function edit(Request $request, AcademicYear $academicYear): View|JsonResponse
     {
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $academicYear]);
+        }
+
         return view('academic-years.edit', compact('academicYear'));
     }
 
-    public function update(UpdateAcademicYearRequest $request, AcademicYear $academicYear): RedirectResponse
+    public function update(UpdateAcademicYearRequest $request, AcademicYear $academicYear): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
 
@@ -50,13 +63,24 @@ class AcademicYearController extends Controller
 
         $academicYear->update($data);
 
-        return redirect()->route('academic-years.index')->with('success', 'Academic year updated.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Academic year updated.',
+                'data' => $academicYear->fresh(),
+            ]);
+        }
+
+        return redirect()->route('super-admin.academic-years.index')->with('success', 'Academic year updated.');
     }
 
-    public function destroy(AcademicYear $academicYear): RedirectResponse
+    public function destroy(Request $request, AcademicYear $academicYear): RedirectResponse|JsonResponse
     {
         $academicYear->delete();
 
-        return redirect()->route('academic-years.index')->with('success', 'Academic year deleted.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Academic year deleted.']);
+        }
+
+        return redirect()->route('super-admin.academic-years.index')->with('success', 'Academic year deleted.');
     }
 }

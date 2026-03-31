@@ -6,7 +6,9 @@ use App\Http\Requests\StoreSemesterRequest;
 use App\Http\Requests\UpdateSemesterRequest;
 use App\Models\AcademicYear;
 use App\Models\Semester;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SemesterController extends Controller
@@ -14,8 +16,9 @@ class SemesterController extends Controller
     public function index(): View
     {
         $semesters = Semester::with('academicYear')->latest()->paginate(10);
+        $academicYears = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
 
-        return view('semesters.index', compact('semesters'));
+        return view('semesters.index', compact('semesters', 'academicYears'));
     }
 
     public function create(): View
@@ -25,7 +28,7 @@ class SemesterController extends Controller
         return view('semesters.create', compact('academicYears'));
     }
 
-    public function store(StoreSemesterRequest $request): RedirectResponse
+    public function store(StoreSemesterRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
 
@@ -33,19 +36,40 @@ class SemesterController extends Controller
             Semester::query()->update(['is_active' => false]);
         }
 
-        Semester::create($data);
+        $semester = Semester::create($data);
 
-        return redirect()->route('semesters.index')->with('success', 'Semester created.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Semester created.',
+                'data' => $semester->load('academicYear'),
+            ]);
+        }
+
+        return redirect()->route('super-admin.semesters.index')->with('success', 'Semester created.');
     }
 
-    public function edit(Semester $semester): View
+    public function edit(Request $request, Semester $semester): View|JsonResponse
     {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'id' => $semester->id,
+                    'academic_year_id' => $semester->academic_year_id,
+                    'name' => $semester->name,
+                    'code' => $semester->code,
+                    'is_active' => (bool) $semester->is_active,
+                    'start_date' => $semester->start_date?->format('Y-m-d'),
+                    'end_date' => $semester->end_date?->format('Y-m-d'),
+                ],
+            ]);
+        }
+
         $academicYears = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
 
         return view('semesters.edit', compact('semester', 'academicYears'));
     }
 
-    public function update(UpdateSemesterRequest $request, Semester $semester): RedirectResponse
+    public function update(UpdateSemesterRequest $request, Semester $semester): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
 
@@ -55,13 +79,24 @@ class SemesterController extends Controller
 
         $semester->update($data);
 
-        return redirect()->route('semesters.index')->with('success', 'Semester updated.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Semester updated.',
+                'data' => $semester->fresh()->load('academicYear'),
+            ]);
+        }
+
+        return redirect()->route('super-admin.semesters.index')->with('success', 'Semester updated.');
     }
 
-    public function destroy(Semester $semester): RedirectResponse
+    public function destroy(Request $request, Semester $semester): RedirectResponse|JsonResponse
     {
         $semester->delete();
 
-        return redirect()->route('semesters.index')->with('success', 'Semester deleted.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Semester deleted.']);
+        }
+
+        return redirect()->route('super-admin.semesters.index')->with('success', 'Semester deleted.');
     }
 }

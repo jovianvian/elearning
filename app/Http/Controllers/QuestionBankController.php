@@ -8,7 +8,9 @@ use App\Models\QuestionBank;
 use App\Models\Role;
 use App\Models\Subject;
 use App\Services\QuestionAccessService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class QuestionBankController extends Controller
@@ -27,8 +29,9 @@ class QuestionBankController extends Controller
             ->latest();
 
         $banks = $this->accessService->scopeAccessibleBanks($query, $user)->paginate(10);
+        $subjects = $this->availableSubjectsForCurrentUser();
 
-        return view('question-banks.index', compact('banks'));
+        return view('question-banks.index', compact('banks', 'subjects'));
     }
 
     public function create(): View
@@ -40,20 +43,27 @@ class QuestionBankController extends Controller
         return view('question-banks.create', compact('subjects'));
     }
 
-    public function store(StoreQuestionBankRequest $request): RedirectResponse
+    public function store(StoreQuestionBankRequest $request): RedirectResponse|JsonResponse
     {
         $this->authorizeManageEntry();
 
         $data = $request->validated();
         abort_unless($this->accessService->canCreateBankForSubject(auth()->user(), (int) $data['subject_id']), 403);
 
-        QuestionBank::create([
+        $questionBank = QuestionBank::create([
             'subject_id' => $data['subject_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'visibility' => $data['visibility'],
             'created_by' => auth()->id(),
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Question bank created.',
+                'data' => $questionBank->load(['subject', 'creator']),
+            ]);
+        }
 
         return redirect()->route('question-banks.index')->with('success', 'Question bank created.');
     }
@@ -68,16 +78,28 @@ class QuestionBankController extends Controller
         return view('question-banks.show', compact('questionBank', 'questions'));
     }
 
-    public function edit(QuestionBank $questionBank): View
+    public function edit(Request $request, QuestionBank $questionBank): View|JsonResponse
     {
         abort_unless($this->accessService->canManageBank(auth()->user(), $questionBank), 403);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'id' => $questionBank->id,
+                    'subject_id' => $questionBank->subject_id,
+                    'title' => $questionBank->title,
+                    'description' => $questionBank->description,
+                    'visibility' => $questionBank->visibility,
+                ],
+            ]);
+        }
 
         $subjects = $this->availableSubjectsForCurrentUser();
 
         return view('question-banks.edit', compact('questionBank', 'subjects'));
     }
 
-    public function update(UpdateQuestionBankRequest $request, QuestionBank $questionBank): RedirectResponse
+    public function update(UpdateQuestionBankRequest $request, QuestionBank $questionBank): RedirectResponse|JsonResponse
     {
         abort_unless($this->accessService->canManageBank(auth()->user(), $questionBank), 403);
 
@@ -91,14 +113,25 @@ class QuestionBankController extends Controller
             'visibility' => $data['visibility'],
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Question bank updated.',
+                'data' => $questionBank->fresh()->load(['subject', 'creator']),
+            ]);
+        }
+
         return redirect()->route('question-banks.index')->with('success', 'Question bank updated.');
     }
 
-    public function destroy(QuestionBank $questionBank): RedirectResponse
+    public function destroy(Request $request, QuestionBank $questionBank): RedirectResponse|JsonResponse
     {
         abort_unless($this->accessService->canManageBank(auth()->user(), $questionBank), 403);
 
         $questionBank->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Question bank moved to trash.']);
+        }
 
         return redirect()->route('question-banks.index')->with('success', 'Question bank moved to trash.');
     }
@@ -121,4 +154,3 @@ class QuestionBankController extends Controller
         return Subject::where('is_active', true)->whereIn('id', $subjectIds)->orderBy('name_id')->get();
     }
 }
-

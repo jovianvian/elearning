@@ -8,7 +8,9 @@ use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\User;
 use App\Models\UserProfile;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -18,8 +20,10 @@ class UserController extends Controller
     public function index(): View
     {
         $users = User::with(['role', 'schoolClass'])->latest()->paginate(12);
+        $roles = Role::where('is_active', true)->orderBy('id')->get();
+        $classes = SchoolClass::where('is_active', true)->orderBy('name')->get();
 
-        return view('users.index', compact('users'));
+        return view('users.index', compact('users', 'roles', 'classes'));
     }
 
     public function create(): View
@@ -30,7 +34,7 @@ class UserController extends Controller
         return view('users.create', compact('roles', 'classes'));
     }
 
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         $role = Role::findOrFail($data['role_id']);
@@ -48,18 +52,42 @@ class UserController extends Controller
             ['preferred_language' => 'id']
         );
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'User created.',
+                'data' => $user->load(['role', 'schoolClass']),
+            ]);
+        }
+
         return redirect()->route('users.index')->with('success', 'User created.');
     }
 
-    public function edit(User $user): View
+    public function edit(Request $request, User $user): View|JsonResponse
     {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'id' => $user->id,
+                    'role_id' => $user->role_id,
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'nis' => $user->nis,
+                    'nip' => $user->nip,
+                    'school_class_id' => $user->school_class_id,
+                    'is_active' => (bool) $user->is_active,
+                    'must_change_password' => (bool) $user->must_change_password,
+                ],
+            ]);
+        }
+
         $roles = Role::where('is_active', true)->orderBy('id')->get();
         $classes = SchoolClass::where('is_active', true)->orderBy('name')->get();
 
         return view('users.edit', compact('user', 'roles', 'classes'));
     }
 
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         $role = Role::findOrFail($data['role_id']);
@@ -82,16 +110,33 @@ class UserController extends Controller
             ['preferred_language' => $user->profile?->preferred_language ?? 'id']
         );
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'User updated.',
+                'data' => $user->fresh()->load(['role', 'schoolClass']),
+            ]);
+        }
+
         return redirect()->route('users.index')->with('success', 'User updated.');
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {
         if ($user->id === auth()->id()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Cannot delete current logged in account.',
+                ], 422);
+            }
+
             return back()->with('error', 'Cannot delete current logged in account.');
         }
 
         $user->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'User moved to trash.']);
+        }
 
         return redirect()->route('users.index')->with('success', 'User moved to trash.');
     }
