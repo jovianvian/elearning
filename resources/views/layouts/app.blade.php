@@ -138,13 +138,21 @@
             border-radius:var(--tera-radius-card);
             border:1px solid rgb(226 232 240 / 1);
             background:#fff;
-            overflow:hidden;
+            overflow-x:auto;
+            overflow-y:hidden;
+            -webkit-overflow-scrolling:touch;
             box-shadow:0 10px 30px -15px rgba(2,6,23,.10);
         }
 
         .tera-table{
             width:100%;
             font-size:.875rem;
+        }
+
+        .mobile-table-scroll{
+            overflow-x:auto;
+            overflow-y:hidden;
+            -webkit-overflow-scrolling:touch;
         }
 
         .tera-table thead{
@@ -158,12 +166,14 @@
             letter-spacing:.02em;
             text-transform:uppercase;
             padding:.8rem .9rem;
+            text-align: center !important;
         }
 
         .tera-table td{
             padding:.85rem .9rem;
             border-top:1px solid rgb(241 245 249 / 1);
             vertical-align:top;
+            text-align: center !important;
         }
 
         .tera-table tbody tr:hover{
@@ -192,14 +202,38 @@
         }
 
         .shell-gutter{
-            padding-left: 1rem;
-            padding-right: 1rem;
+            padding-left: .875rem;
+            padding-right: .875rem;
         }
 
         @media (min-width: 640px){
             .shell-gutter{
                 padding-left: 1.5rem;
                 padding-right: 1.5rem;
+            }
+        }
+
+        @media (max-width: 1023px){
+            .tera-page{
+                max-width: 100%;
+            }
+
+            .tera-card-body{
+                padding: 1rem;
+            }
+
+            .tera-table th,
+            .tera-table td{
+                padding: .7rem .65rem;
+                font-size: .8rem;
+            }
+
+            .tera-table{
+                min-width: 760px;
+            }
+
+            .mobile-table-scroll > table{
+                min-width: 760px;
             }
         }
 
@@ -224,7 +258,7 @@
     <div class="transition-all duration-300 min-h-screen m-0 pt-0 lg:pl-[var(--shell-sidebar)]" :class="sidebarMini ? 'lg:pl-[var(--shell-sidebar-mini)]' : 'lg:pl-[var(--shell-sidebar)]'">
         @include('layouts.partials.topbar')
 
-        <main class="flex-1 overflow-x-hidden shell-gutter pt-4 pb-6 sm:pt-5 sm:pb-8">
+        <main class="flex-1 overflow-x-hidden shell-gutter pt-3 pb-5 sm:pt-5 sm:pb-8">
             <div class="tera-page space-y-5">
                 @include('layouts.partials.flash')
                 @yield('content')
@@ -313,6 +347,19 @@
                 canvas.dataset.chartInitialized = '1';
             } catch (err) {}
         });
+
+        if (window.matchMedia('(max-width: 1023px)').matches) {
+            document.querySelectorAll('main table').forEach((table) => {
+                const parent = table.parentElement;
+                if (!parent) return;
+                if (parent.classList.contains('tera-table-wrap') || parent.classList.contains('mobile-table-scroll')) return;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'mobile-table-scroll rounded-xl border border-slate-200 bg-white';
+                parent.insertBefore(wrapper, table);
+                wrapper.appendChild(table);
+            });
+        }
     });
 </script>
 </body>

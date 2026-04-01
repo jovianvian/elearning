@@ -6,10 +6,12 @@ use App\Http\Requests\StoreQuestionImportRequest;
 use App\Models\QuestionBank;
 use App\Models\QuestionImportLog;
 use App\Models\Role;
+use App\Models\Subject;
 use App\Services\QuestionAccessService;
 use App\Services\QuestionImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class QuestionImportController extends Controller
@@ -20,18 +22,41 @@ class QuestionImportController extends Controller
     ) {
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
-        $query = QuestionImportLog::with(['user', 'subject'])->latest();
+        $query = QuestionImportLog::with(['user', 'subject']);
 
         if ($user->hasRole(Role::TEACHER)) {
             $query->where('user_id', $user->id);
         }
 
-        $logs = $query->paginate(20);
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('file_name', 'like', "%{$q}%")
+                    ->orWhereHas('user', fn ($uq) => $uq->where('full_name', 'like', "%{$q}%"))
+                    ->orWhereHas('subject', fn ($sq) => $sq->where('name_id', 'like', "%{$q}%"));
+            });
+        }
 
-        return view('question-imports.index', compact('logs'));
+        if ($subjectId = $request->integer('subject_id')) {
+            $query->where('subject_id', $subjectId);
+        }
+
+        if ($importType = $request->string('import_type')->toString()) {
+            if (in_array($importType, ['aiken', 'csv'], true)) {
+                $query->where('import_type', $importType);
+            }
+        }
+
+        $logs = $query->latest()->paginate(20)->withQueryString();
+        $subjects = $user->hasRole(Role::TEACHER)
+            ? Subject::whereIn('id', $this->accessibleBanksForCurrentUser()->pluck('subject_id')->unique()->values())
+                ->orderBy('name_id')
+                ->get()
+            : Subject::where('is_active', true)->orderBy('name_id')->get();
+
+        return view('question-imports.index', compact('logs', 'subjects'));
     }
 
     public function create(): View
@@ -147,4 +172,3 @@ class QuestionImportController extends Controller
         return '"'.$value.'"';
     }
 }
-

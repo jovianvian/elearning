@@ -13,9 +13,30 @@ use Illuminate\View\View;
 
 class SemesterController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $semesters = Semester::with('academicYear')->latest()->paginate(10);
+        $query = Semester::with('academicYear');
+
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('name', 'like', "%{$q}%")
+                    ->orWhere('code', 'like', "%{$q}%");
+            });
+        }
+
+        if ($yearId = $request->integer('academic_year_id')) {
+            $query->where('academic_year_id', $yearId);
+        }
+
+        if ($request->filled('is_active')) {
+            $query->where('is_active', (bool) $request->boolean('is_active'));
+        }
+
+        $semesters = $query
+            ->orderByDesc('is_active')
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
         $academicYears = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
 
         return view('semesters.index', compact('semesters', 'academicYears'));

@@ -13,27 +13,52 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search class name or code">
+        <x-slot:filters>
+            <div>
+                <label class="tera-label">{{ __('ui.academic_year') }}</label>
+                <select name="academic_year_id" class="tera-select">
+                    <option value="">All</option>
+                    @foreach($academicYears as $year)
+                        <option value="{{ $year->id }}" @selected((string)request('academic_year_id') === (string)$year->id)>{{ $year->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="tera-label">{{ __('ui.grade_level') }}</label>
+                <select name="grade_level" class="tera-select">
+                    <option value="">All</option>
+                    @foreach([7,8,9] as $grade)
+                        <option value="{{ $grade }}" @selected((string)request('grade_level') === (string)$grade)>{{ $grade }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </x-slot:filters>
+    </x-ui.table-toolbar>
+
     <div class="tera-table-wrap">
         <table class="tera-table">
             <thead>
                 <tr>
-                    <th class="text-left">{{ __('ui.name') }}</th>
-                    <th class="text-center">{{ __('ui.grade_level') }}</th>
-                    <th class="text-center">{{ __('ui.academic_year') }}</th>
-                    <th class="text-center">{{ __('ui.homeroom_teacher') }}</th>
-                    <th class="text-center">{{ __('ui.active') }}</th>
-                    <th class="text-right">{{ __('ui.action') }}</th>
+                    <th>No</th>
+                    <th>{{ __('ui.name') }}</th>
+                    <th>{{ __('ui.grade_level') }}</th>
+                    <th>{{ __('ui.academic_year') }}</th>
+                    <th>{{ __('ui.homeroom_teacher') }}</th>
+                    <th>{{ __('ui.active') }}</th>
+                    <th>{{ __('ui.action') }}</th>
                 </tr>
             </thead>
             <tbody>
             @foreach($classes as $class)
                 <tr>
+                    <td>{{ $classes->firstItem() + $loop->index }}</td>
                     <td class="font-semibold">{{ $class->name }}</td>
-                    <td class="text-center">{{ $class->grade_level }}</td>
-                    <td class="text-center">{{ $class->academicYear?->name }}</td>
-                    <td class="text-center">{{ $class->homeroomTeacher?->full_name ?: '-' }}</td>
-                    <td class="text-center"><span class="tera-badge {{ $class->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $class->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td class="text-right">
+                    <td>{{ $class->grade_level }}</td>
+                    <td>{{ $class->academicYear?->name }}</td>
+                    <td>{{ $class->homeroomTeacher?->full_name ?: '-' }}</td>
+                    <td><span class="tera-badge {{ $class->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $class->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                    <td>
                         <div class="inline-flex items-center gap-2">
                             <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $class->id }})">{{ __('ui.edit') }}</button>
                             <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $class->id }}, @js($class->name))">{{ __('ui.delete') }}</button>

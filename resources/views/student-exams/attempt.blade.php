@@ -1,10 +1,10 @@
 @extends('layouts.app', ['title' => 'Exam Attempt'])
 
 @section('content')
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h2 class="text-xl font-semibold">{{ $attempt->exam->title }}</h2>
+                <h2 class="text-lg sm:text-xl font-semibold">{{ $attempt->exam->title }}</h2>
                 <p class="text-xs text-slate-500 mt-1">{{ $attempt->exam->course?->title }}</p>
             </div>
             <div class="px-3 py-2 rounded-lg bg-yellowx/20 text-amber-700 text-sm font-semibold">
@@ -17,7 +17,7 @@
         @csrf
         @foreach($questions as $answer)
             @php($question = $answer->question)
-            <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4">
                 <div class="font-medium">{{ $loop->iteration }}. {{ $question?->question_text }}</div>
                 <div class="text-xs text-slate-500 mt-1">{{ ucfirst($question?->type) }} | {{ $question?->points }} pts</div>
 
@@ -47,9 +47,9 @@
             </div>
         @endforeach
 
-        <div class="flex gap-2">
-            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm">Submit Exam</button>
-            <button type="button" id="save-btn" class="px-4 py-2 border rounded-lg text-sm">Save Draft</button>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm w-full sm:w-auto">Submit Exam</button>
+            <button type="button" id="save-btn" class="px-4 py-2 border rounded-lg text-sm w-full sm:w-auto">Save Draft</button>
         </div>
     </form>
 

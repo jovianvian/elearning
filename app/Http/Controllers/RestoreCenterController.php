@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\ActivityLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class RestoreCenterController extends Controller
@@ -29,7 +30,25 @@ class RestoreCenterController extends Controller
         }
 
         $modelClass = $map[$entity];
-        $items = $modelClass::onlyTrashed()->latest('deleted_at')->paginate(20)->withQueryString();
+        $query = $modelClass::onlyTrashed();
+
+        if ($q = trim((string) $request->string('q'))) {
+            $table = (new $modelClass)->getTable();
+            $searchableColumns = collect(['title', 'name', 'name_id', 'full_name', 'username', 'code'])
+                ->filter(fn (string $column): bool => Schema::hasColumn($table, $column))
+                ->values()
+                ->all();
+
+            if ($searchableColumns !== []) {
+                $query->where(function ($w) use ($q, $searchableColumns): void {
+                    foreach ($searchableColumns as $column) {
+                        $w->orWhere($column, 'like', "%{$q}%");
+                    }
+                });
+            }
+        }
+
+        $items = $query->latest('deleted_at')->paginate(20)->withQueryString();
 
         return view('monitoring.restore-center', compact('items', 'entity', 'map'));
     }
@@ -71,4 +90,3 @@ class RestoreCenterController extends Controller
         ];
     }
 }
-

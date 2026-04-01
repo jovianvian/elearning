@@ -10,25 +10,49 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search semester name or code">
+        <x-slot:filters>
+            <div>
+                <label class="tera-label">{{ __('ui.academic_year') }}</label>
+                <select name="academic_year_id" class="tera-select">
+                    <option value="">All</option>
+                    @foreach($academicYears as $year)
+                        <option value="{{ $year->id }}" @selected((string)request('academic_year_id') === (string)$year->id)>{{ $year->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="tera-label">{{ __('ui.active') }}</label>
+                <select name="is_active" class="tera-select">
+                    <option value="">All</option>
+                    <option value="1" @selected(request('is_active') === '1')>{{ __('ui.active') }}</option>
+                    <option value="0" @selected(request('is_active') === '0')>{{ __('ui.inactive') }}</option>
+                </select>
+            </div>
+        </x-slot:filters>
+    </x-ui.table-toolbar>
+
     <div class="tera-table-wrap">
         <table class="tera-table">
             <thead>
             <tr>
-                <th class="text-left">{{ __('ui.name') }}</th>
-                <th class="text-left">{{ __('ui.code') }}</th>
-                <th class="text-center">{{ __('ui.academic_year') }}</th>
-                <th class="text-center">{{ __('ui.active') }}</th>
-                <th class="text-right">{{ __('ui.action') }}</th>
+                <th>No</th>
+                <th>{{ __('ui.name') }}</th>
+                <th>{{ __('ui.code') }}</th>
+                <th>{{ __('ui.academic_year') }}</th>
+                <th>{{ __('ui.active') }}</th>
+                <th>{{ __('ui.action') }}</th>
             </tr>
             </thead>
             <tbody>
             @foreach($semesters as $semester)
                 <tr>
+                    <td>{{ $semesters->firstItem() + $loop->index }}</td>
                     <td>{{ $semester->name }}</td>
                     <td>{{ $semester->code }}</td>
-                    <td class="text-center">{{ $semester->academicYear?->name }}</td>
-                    <td class="text-center"><span class="tera-badge {{ $semester->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $semester->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td class="text-right">
+                    <td>{{ $semester->academicYear?->name }}</td>
+                    <td><span class="tera-badge {{ $semester->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $semester->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                    <td>
                         <div class="inline-flex gap-2">
                             <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $semester->id }})">{{ __('ui.edit') }}</button>
                             <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $semester->id }}, @js($semester->name))">{{ __('ui.delete') }}</button>

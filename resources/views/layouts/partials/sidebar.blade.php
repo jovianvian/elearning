@@ -203,7 +203,7 @@
 @endphp
 
 <aside
-    class="fixed top-0 bottom-0 left-0 z-50 w-[88vw] max-w-[20rem] lg:max-w-none m-0 pt-0 bg-gradient-to-b from-deep via-primary to-sky-700 text-white transition-all duration-300 -translate-x-full lg:translate-x-0 lg:w-[var(--shell-sidebar)] border-r"
+    class="fixed top-0 bottom-0 left-0 z-50 w-[88vw] max-w-[20rem] sm:w-[78vw] lg:w-[var(--shell-sidebar)] m-0 pt-0 bg-gradient-to-b from-deep via-primary to-sky-700 text-white transition-all duration-300 -translate-x-full lg:translate-x-0 border-r"
     style="border-color: var(--shell-divider);"
     :class="{'translate-x-0': sidebarOpen, 'lg:w-[var(--shell-sidebar-mini)]': sidebarMini, 'lg:w-[var(--shell-sidebar)]': !sidebarMini}"
 >
@@ -227,7 +227,7 @@
             <div class="font-semibold text-sm truncate" x-show="!sidebarMini" x-cloak>{{ auth()->user()->full_name ?? '-' }}</div>
         </div>
 
-        <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+        <nav class="flex-1 overflow-y-auto overflow-x-visible px-3 py-4 space-y-3">
             @foreach($sections as $section)
                 <div x-data="{ open: @js($section['active']) }" class="space-y-1">
                     <button
@@ -235,12 +235,14 @@
                         class="w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white/70 hover:text-white"
                         :class="sidebarMini ? 'justify-center' : ''"
                         @click="open = !open"
+                        x-show="!sidebarMini"
+                        x-cloak
                     >
-                        <span x-show="!sidebarMini" x-cloak>{{ $section['label'] }}</span>
-                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" x-show="!sidebarMini" x-cloak></i>
+                        <span>{{ $section['label'] }}</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''"></i>
                     </button>
 
-                    <div x-show="open || sidebarMini" class="space-y-1">
+                    <div x-show="open || sidebarMini" x-cloak class="space-y-1">
                         @foreach($section['items'] as $item)
                             @if(($item['type'] ?? '') === 'leaf')
                                 <a
@@ -253,12 +255,12 @@
                                     <span x-show="!sidebarMini" x-cloak>{{ $item['label'] }}</span>
                                 </a>
                             @else
-                                <div x-data="{ openSub: @js($item['active'] ?? false) }" class="space-y-1">
+                                <div x-data="{ openSub: @js($item['active'] ?? false) }" class="space-y-1 relative">
                                     <button
                                         type="button"
                                         class="{{ $menuBaseClasses }} {{ ($item['active'] ?? false) ? $menuActiveClasses : $menuIdleClasses }} w-full justify-between"
                                         :class="sidebarMini ? 'justify-center px-2' : ''"
-                                        @click="openSub = !openSub"
+                                        @click.stop="openSub = !openSub"
                                     >
                                         <span class="inline-flex items-center gap-3">
                                             <i data-lucide="{{ $item['icon'] }}" class="w-[18px] h-[18px] shrink-0"></i>
@@ -267,7 +269,7 @@
                                         <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="openSub ? 'rotate-180' : ''" x-show="!sidebarMini" x-cloak></i>
                                     </button>
 
-                                    <div x-show="openSub && !sidebarMini" class="ml-4 pl-2 border-l border-white/20 space-y-1">
+                                    <div x-show="openSub && !sidebarMini" x-cloak class="ml-4 pl-2 border-l border-white/20 space-y-1">
                                         @foreach($item['children'] as $child)
                                             <a
                                                 href="{{ route($child['route']) }}"
@@ -276,6 +278,23 @@
                                             >
                                                 <i data-lucide="{{ $child['icon'] }}" class="w-4 h-4 shrink-0"></i>
                                                 <span>{{ $child['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+
+                                    <div
+                                        x-show="openSub && sidebarMini"
+                                        x-cloak
+                                        class="hidden lg:flex lg:flex-col mt-1 space-y-1"
+                                    >
+                                        @foreach($item['children'] as $child)
+                                            <a
+                                                href="{{ route($child['route']) }}"
+                                                class="{{ $menuBaseClasses }} {{ $child['active'] ? $menuActiveClasses : $menuIdleClasses }} justify-center !w-9 !h-9 !px-0 !py-0 !rounded-lg"
+                                                aria-current="{{ $child['active'] ? 'page' : 'false' }}"
+                                                title="{{ $child['label'] }}"
+                                            >
+                                                <i data-lucide="{{ $child['icon'] }}" class="w-4 h-4 shrink-0"></i>
                                             </a>
                                         @endforeach
                                     </div>

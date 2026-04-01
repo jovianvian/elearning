@@ -15,9 +15,26 @@ use Illuminate\View\View;
 
 class SchoolClassController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $classes = SchoolClass::with(['academicYear', 'homeroomTeacher'])->latest()->paginate(10);
+        $query = SchoolClass::with(['academicYear', 'homeroomTeacher']);
+
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('name', 'like', "%{$q}%")
+                    ->orWhere('code', 'like', "%{$q}%");
+            });
+        }
+
+        if ($yearId = $request->integer('academic_year_id')) {
+            $query->where('academic_year_id', $yearId);
+        }
+
+        if ($grade = $request->integer('grade_level')) {
+            $query->where('grade_level', $grade);
+        }
+
+        $classes = $query->orderBy('name')->paginate(10)->withQueryString();
         $teachers = User::whereHas('role', fn ($q) => $q->where('code', Role::TEACHER))->orderBy('full_name')->get();
         $academicYears = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
 

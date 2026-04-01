@@ -10,25 +10,40 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search subject name or code">
+        <x-slot:filters>
+            <div>
+                <label class="tera-label">{{ __('ui.active') }}</label>
+                <select name="is_active" class="tera-select">
+                    <option value="">All</option>
+                    <option value="1" @selected(request('is_active') === '1')>{{ __('ui.active') }}</option>
+                    <option value="0" @selected(request('is_active') === '0')>{{ __('ui.inactive') }}</option>
+                </select>
+            </div>
+        </x-slot:filters>
+    </x-ui.table-toolbar>
+
     <div class="tera-table-wrap">
         <table class="tera-table">
             <thead>
                 <tr>
-                    <th class="text-left">{{ __('ui.subject_name_id') }}</th>
-                    <th class="text-left">{{ __('ui.subject_name_en') }}</th>
-                    <th class="text-center">{{ __('ui.code') }}</th>
-                    <th class="text-center">{{ __('ui.active') }}</th>
-                    <th class="text-right">{{ __('ui.action') }}</th>
+                    <th>No</th>
+                    <th>{{ __('ui.subject_name_id') }}</th>
+                    <th>{{ __('ui.subject_name_en') }}</th>
+                    <th>{{ __('ui.code') }}</th>
+                    <th>{{ __('ui.active') }}</th>
+                    <th>{{ __('ui.action') }}</th>
                 </tr>
             </thead>
             <tbody>
             @foreach($subjects as $subject)
                 <tr>
+                    <td>{{ $subjects->firstItem() + $loop->index }}</td>
                     <td class="font-semibold">{{ $subject->name_id }}</td>
                     <td>{{ $subject->name_en ?: '-' }}</td>
-                    <td class="text-center">{{ $subject->code }}</td>
-                    <td class="text-center"><span class="tera-badge {{ $subject->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $subject->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td class="text-right">
+                    <td>{{ $subject->code }}</td>
+                    <td><span class="tera-badge {{ $subject->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $subject->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                    <td>
                         <div class="inline-flex items-center gap-2">
                             <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $subject->id }})">{{ __('ui.edit') }}</button>
                             <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $subject->id }}, @js($subject->name_id))">{{ __('ui.delete') }}</button>

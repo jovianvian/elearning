@@ -9,29 +9,63 @@
     </x-slot:actions>
 </x-ui.page-header>
 
+<x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search student name or NIS">
+    <x-slot:filters>
+        <div>
+            <label class="tera-label">{{ __('ui.classes') }}</label>
+            <select name="class_id" class="tera-select">
+                <option value="">All</option>
+                @foreach($classes as $klass)
+                    <option value="{{ $klass->id }}" @selected((string)request('class_id') === (string)$klass->id)>{{ $klass->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="tera-label">{{ __('ui.academic_year') }}</label>
+            <select name="academic_year_id" class="tera-select">
+                <option value="">All</option>
+                @foreach($years as $year)
+                    <option value="{{ $year->id }}" @selected((string)request('academic_year_id') === (string)$year->id)>{{ $year->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="tera-label">{{ __('ui.grade_level') }}</label>
+            <select name="grade_level" class="tera-select">
+                <option value="">All</option>
+                @foreach([7,8,9] as $grade)
+                    <option value="{{ $grade }}" @selected((string)request('grade_level') === (string)$grade)>{{ $grade }}</option>
+                @endforeach
+            </select>
+        </div>
+    </x-slot:filters>
+</x-ui.table-toolbar>
+
 <div class="tera-table-wrap">
     <table class="tera-table">
         <thead>
             <tr>
-                <th class="text-left">{{ __('ui.student') }}</th>
-                <th class="text-center">NIS</th>
-                <th class="text-center">{{ __('ui.classes') }}</th>
-                <th class="text-center">{{ __('ui.academic_year') }}</th>
-                <th class="text-center">{{ __('ui.status') }}</th>
-                <th class="text-right">{{ __('ui.action') }}</th>
+                <th>No</th>
+                <th>{{ __('ui.student') }}</th>
+                <th>NIS</th>
+                <th>{{ __('ui.classes') }}</th>
+                <th>{{ __('ui.academic_year') }}</th>
+                <th>{{ __('ui.status') }}</th>
+                <th>{{ __('ui.action') }}</th>
             </tr>
         </thead>
         <tbody>
         @foreach($assignments as $a)
             <tr>
+                <td>{{ $assignments->firstItem() + $loop->index }}</td>
                 <td>{{ $a->student?->full_name }}</td>
-                <td class="text-center">{{ $a->student?->nis }}</td>
-                <td class="text-center">{{ $a->class?->name }}</td>
-                <td class="text-center">{{ $a->academicYear?->name }}</td>
-                <td class="text-center">
+                <td>{{ $a->student?->nis }}</td>
+                <td>{{ $a->class?->name }}</td>
+                <td>{{ $a->academicYear?->name }}</td>
+                <td>
                     <span class="tera-badge {{ $a->status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ ucfirst($a->status) }}</span>
                 </td>
-                <td class="text-right">
+                <td>
                     <div class="inline-flex items-center gap-2">
                         <a class="tera-btn tera-btn-muted !px-3 !py-1.5" href="{{ route('assignments.class-students.edit', $a) }}">{{ __('ui.edit') }}</a>
                         <form method="POST" class="inline" action="{{ route('assignments.class-students.destroy', $a) }}">

@@ -10,9 +10,12 @@ use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\Question;
 use App\Models\Role;
+use App\Models\SchoolClass;
+use App\Models\Subject;
 use App\Services\ExamAccessService;
 use App\Services\ExamEngineService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -25,13 +28,12 @@ class ExamController extends Controller
     ) {
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
 
         $query = Exam::query()
-            ->with(['course.subject', 'course.schoolClass', 'creator'])
-            ->latest();
+            ->with(['course.subject', 'course.schoolClass', 'creator']);
 
         if ($user->hasRole(Role::TEACHER)) {
             $query->whereHas('course.teachers', fn ($q) => $q->where('users.id', $user->id));
@@ -46,9 +48,38 @@ class ExamController extends Controller
             // Principal read-only can view all exams.
         }
 
-        $exams = $query->paginate(10);
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('title', 'like', "%{$q}%")
+                    ->orWhereHas('course', fn ($cq) => $cq->where('title', 'like', "%{$q}%"));
+            });
+        }
 
-        return view('exams.index', compact('exams'));
+        if ($courseId = $request->integer('course_id')) {
+            $query->where('course_id', $courseId);
+        }
+
+        if ($subjectId = $request->integer('subject_id')) {
+            $query->whereHas('course', fn ($cq) => $cq->where('subject_id', $subjectId));
+        }
+
+        if ($classId = $request->integer('class_id')) {
+            $query->whereHas('course', fn ($cq) => $cq->where('class_id', $classId));
+        }
+
+        if ($status = $request->string('status')->toString()) {
+            if (in_array($status, ['draft', 'scheduled', 'active', 'closed', 'graded', 'archived'], true)) {
+                $query->where('status', $status);
+            }
+        }
+
+        $exams = $query->orderBy('title')->paginate(10)->withQueryString();
+
+        $courses = $this->manageableCourses();
+        $subjects = Subject::where('is_active', true)->orderBy('name_id')->get();
+        $classes = SchoolClass::where('is_active', true)->orderBy('name')->get();
+
+        return view('exams.index', compact('exams', 'courses', 'subjects', 'classes'));
     }
 
     public function create(): View

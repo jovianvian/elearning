@@ -10,19 +10,47 @@ use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ClassStudentAssignmentController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $assignments = ClassStudent::query()
+        $query = ClassStudent::query()
             ->with(['class:id,name', 'student:id,full_name,nis', 'student.role:id,code', 'academicYear:id,name'])
-            ->latest()
-            ->paginate(12);
+            ->latest();
 
-        return view('assignments.class-students.index', compact('assignments'));
+        if ($q = trim((string) $request->string('q'))) {
+            $query->whereHas('student', function ($w) use ($q): void {
+                $w->where('full_name', 'like', "%{$q}%")
+                    ->orWhere('nis', 'like', "%{$q}%");
+            });
+        }
+
+        if ($classId = $request->integer('class_id')) {
+            $query->where('class_id', $classId);
+        }
+
+        if ($yearId = $request->integer('academic_year_id')) {
+            $query->where('academic_year_id', $yearId);
+        }
+
+        if ($grade = $request->integer('grade_level')) {
+            $query->whereHas('class', fn ($cq) => $cq->where('grade_level', $grade));
+        }
+
+        $assignments = $query
+            ->join('users', 'users.id', '=', 'class_students.student_id')
+            ->orderBy('users.full_name')
+            ->select('class_students.*')
+            ->paginate(12)
+            ->withQueryString();
+        $classes = SchoolClass::where('is_active', true)->orderBy('name')->get();
+        $years = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
+
+        return view('assignments.class-students.index', compact('assignments', 'classes', 'years'));
     }
 
     public function create(): View

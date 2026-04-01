@@ -17,9 +17,28 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $users = User::with(['role', 'schoolClass'])->latest()->paginate(12);
+        $query = User::with(['role', 'schoolClass']);
+
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('full_name', 'like', "%{$q}%")
+                    ->orWhere('nis', 'like', "%{$q}%")
+                    ->orWhere('nip', 'like', "%{$q}%")
+                    ->orWhere('username', 'like', "%{$q}%");
+            });
+        }
+
+        if ($roleId = $request->integer('role_id')) {
+            $query->where('role_id', $roleId);
+        }
+
+        if ($classId = $request->integer('class_id')) {
+            $query->where('school_class_id', $classId);
+        }
+
+        $users = $query->orderBy('full_name')->paginate(12)->withQueryString();
         $roles = Role::where('is_active', true)->orderBy('id')->get();
         $classes = SchoolClass::where('is_active', true)->orderBy('name')->get();
 

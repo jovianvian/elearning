@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="bg-white rounded-xl border border-slate-200 p-6">
-        <div class="flex items-start justify-between">
+    <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
             <div>
                 <h2 class="text-xl font-semibold">{{ $questionBank->title }}</h2>
                 <p class="text-sm text-slate-500 mt-1">
@@ -13,14 +13,14 @@
                     <p class="text-sm mt-3 text-slate-600">{{ $questionBank->description }}</p>
                 @endif
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                 <a href="{{ route('question-banks.questions.create', $questionBank) }}" class="px-4 py-2 bg-primary text-white rounded-lg text-sm">Add Question</a>
                 <a href="{{ route('question-banks.index') }}" class="px-4 py-2 border rounded-lg text-sm">Back</a>
             </div>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-slate-200 mobile-table-scroll">
         <table class="w-full text-sm">
             <thead class="bg-slate-50 text-slate-600">
             <tr>
@@ -84,4 +84,3 @@
         {{ $questions->links() }}
     </div>
 @endsection
-

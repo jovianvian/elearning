@@ -10,21 +10,45 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search bank title or subject">
+        <x-slot:filters>
+            <div>
+                <label class="tera-label">{{ __('ui.subjects') }}</label>
+                <select name="subject_id" class="tera-select">
+                    <option value="">All</option>
+                    @foreach($subjects as $subject)
+                        <option value="{{ $subject->id }}" @selected((string)request('subject_id') === (string)$subject->id)>{{ $subject->name_id }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="tera-label">{{ __('ui.visibility') }}</label>
+                <select name="visibility" class="tera-select">
+                    <option value="">All</option>
+                    <option value="subject_shared" @selected(request('visibility') === 'subject_shared')>{{ __('ui.shared') }}</option>
+                    <option value="private" @selected(request('visibility') === 'private')>{{ __('ui.private') }}</option>
+                </select>
+            </div>
+        </x-slot:filters>
+    </x-ui.table-toolbar>
+
     <div class="tera-table-wrap">
         <table class="tera-table">
             <thead>
             <tr>
-                <th class="text-left">{{ __('ui.name') }}</th>
-                <th class="text-left">{{ __('ui.subjects') }}</th>
-                <th class="text-left">{{ __('ui.visibility') }}</th>
-                <th class="text-left">{{ __('ui.questions') }}</th>
-                <th class="text-left">{{ __('ui.creator') }}</th>
-                <th class="text-right">{{ __('ui.action') }}</th>
+                <th>No</th>
+                <th>{{ __('ui.name') }}</th>
+                <th>{{ __('ui.subjects') }}</th>
+                <th>{{ __('ui.visibility') }}</th>
+                <th>{{ __('ui.questions') }}</th>
+                <th>{{ __('ui.creator') }}</th>
+                <th>{{ __('ui.action') }}</th>
             </tr>
             </thead>
             <tbody>
             @forelse($banks as $bank)
                 <tr>
+                    <td>{{ $banks->firstItem() + $loop->index }}</td>
                     <td class="font-semibold">{{ $bank->title }}</td>
                     <td>{{ $bank->subject->name_id ?? '-' }}</td>
                     <td>
@@ -36,8 +60,8 @@
                     </td>
                     <td>{{ $bank->questions_count }}</td>
                     <td>{{ $bank->creator->full_name ?? '-' }}</td>
-                    <td class="text-right">
-                        <div class="inline-flex justify-end gap-2">
+                    <td>
+                        <div class="inline-flex justify-center gap-2">
                             <a href="{{ route('question-banks.show', $bank) }}" class="tera-btn tera-btn-muted !px-3 !py-1.5">{{ __('ui.view') }}</a>
                             <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $bank->id }})">{{ __('ui.edit') }}</button>
                             <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $bank->id }}, @js($bank->title))">{{ __('ui.delete') }}</button>
@@ -46,7 +70,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-slate-500">{{ __('ui.no_question_banks') }}</td>
+                    <td colspan="7" class="px-4 py-8 text-center text-slate-500">{{ __('ui.no_question_banks') }}</td>
                 </tr>
             @endforelse
             </tbody>

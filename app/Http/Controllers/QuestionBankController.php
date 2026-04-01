@@ -19,16 +19,36 @@ class QuestionBankController extends Controller
     {
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
 
         $query = QuestionBank::query()
             ->with(['subject', 'creator'])
-            ->withCount('questions')
-            ->latest();
+            ->withCount('questions');
 
-        $banks = $this->accessService->scopeAccessibleBanks($query, $user)->paginate(10);
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('title', 'like', "%{$q}%")
+                    ->orWhereHas('subject', fn ($sq) => $sq->where('name_id', 'like', "%{$q}%"));
+            });
+        }
+
+        if ($subjectId = $request->integer('subject_id')) {
+            $query->where('subject_id', $subjectId);
+        }
+
+        if ($visibility = $request->string('visibility')->toString()) {
+            if (in_array($visibility, ['subject_shared', 'private'], true)) {
+                $query->where('visibility', $visibility);
+            }
+        }
+
+        $banks = $this->accessService
+            ->scopeAccessibleBanks($query, $user)
+            ->orderBy('title')
+            ->paginate(10)
+            ->withQueryString();
         $subjects = $this->availableSubjectsForCurrentUser();
 
         return view('question-banks.index', compact('banks', 'subjects'));

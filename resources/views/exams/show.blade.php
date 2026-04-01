@@ -1,8 +1,8 @@
 @extends('layouts.app', ['title' => 'Exam Detail'])
 
 @section('content')
-    <div class="bg-white rounded-xl border border-slate-200 p-6">
-        <div class="flex items-start justify-between gap-4">
+    <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row items-start justify-between gap-4">
             <div>
                 <h2 class="text-xl font-semibold">{{ $exam->title }}</h2>
                 <p class="text-sm text-slate-500 mt-1">{{ $exam->course?->title }} - {{ $exam->course?->schoolClass?->name }}</p>
@@ -12,7 +12,7 @@
                     Status: {{ $exam->effective_status }}
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                 @if(auth()->user()->hasRole('super_admin','admin','teacher'))
                     <a href="{{ route('exams.edit', $exam) }}" class="px-3 py-2 border rounded-lg text-sm">Edit</a>
                     <a href="{{ route('exams.results', $exam) }}" class="px-3 py-2 border rounded-lg text-sm">Results</a>
@@ -34,7 +34,7 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 p-6">
+    <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         <h3 class="font-semibold mb-3">Question Set ({{ $exam->examQuestions->count() }})</h3>
         <div class="space-y-2 text-sm">
             @foreach($exam->examQuestions->sortBy('question_order') as $examQuestion)
@@ -47,9 +47,9 @@
     </div>
 
     @if(auth()->user()->hasRole('super_admin','admin','teacher'))
-        <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
             <h3 class="font-semibold mb-3">Publish Results</h3>
-            <form method="POST" action="{{ route('exams.publish-results', $exam) }}" class="flex gap-2">
+            <form method="POST" action="{{ route('exams.publish-results', $exam) }}" class="flex flex-col sm:flex-row gap-2">
                 @csrf
                 <input name="note" class="flex-1 rounded-lg border-slate-300" placeholder="Optional note">
                 <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm">Publish</button>
@@ -57,7 +57,7 @@
         </div>
     @endif
 
-    <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+    <div class="bg-white rounded-xl border border-slate-200 mobile-table-scroll">
         <div class="px-4 py-3 border-b font-semibold">Attempts</div>
         <table class="w-full text-sm">
             <thead class="bg-slate-50 text-slate-600">

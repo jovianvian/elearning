@@ -8,6 +8,7 @@ use App\Models\LoginLog;
 use App\Models\Role;
 use App\Models\SuspiciousActivityLog;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ReportController extends Controller
@@ -66,7 +67,7 @@ class ReportController extends Controller
         ));
     }
 
-    public function examScores(Exam $exam): View
+    public function examScores(Request $request, Exam $exam): View
     {
         $user = auth()->user();
         abort_unless($user->hasRole(Role::SUPER_ADMIN, Role::ADMIN, Role::PRINCIPAL, Role::TEACHER), 403);
@@ -76,13 +77,23 @@ class ReportController extends Controller
             abort_unless($allowed, 403);
         }
 
-        $attempts = ExamAttempt::query()
+        $query = ExamAttempt::query()
             ->with('student')
-            ->where('exam_id', $exam->id)
-            ->latest()
-            ->paginate(20);
+            ->where('exam_id', $exam->id);
+
+        if ($q = trim((string) $request->string('q'))) {
+            $query->whereHas('student', function ($sq) use ($q): void {
+                $sq->where('full_name', 'like', "%{$q}%")
+                    ->orWhere('nis', 'like', "%{$q}%");
+            });
+        }
+
+        if ($status = $request->string('status')->toString()) {
+            $query->where('status', $status);
+        }
+
+        $attempts = $query->latest()->paginate(20)->withQueryString();
 
         return view('reports.exam-scores', compact('exam', 'attempts'));
     }
 }
-

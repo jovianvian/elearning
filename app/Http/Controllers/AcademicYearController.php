@@ -12,9 +12,23 @@ use Illuminate\View\View;
 
 class AcademicYearController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $academicYears = AcademicYear::latest()->paginate(10);
+        $query = AcademicYear::query();
+
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where('name', 'like', "%{$q}%");
+        }
+
+        if ($request->filled('is_active')) {
+            $query->where('is_active', (bool) $request->boolean('is_active'));
+        }
+
+        $academicYears = $query
+            ->orderByDesc('is_active')
+            ->orderByDesc('start_date')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('academic-years.index', compact('academicYears'));
     }

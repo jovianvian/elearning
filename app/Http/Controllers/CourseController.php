@@ -14,6 +14,7 @@ use App\Models\SubjectTeacher;
 use App\Models\User;
 use App\Services\CourseEnrollmentService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -24,12 +25,11 @@ class CourseController extends Controller
     {
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
 
-        $query = Course::with(['subject', 'schoolClass', 'academicYear', 'semester', 'teachers'])
-            ->latest();
+        $query = Course::with(['subject', 'schoolClass', 'academicYear', 'semester', 'teachers']);
 
         if ($user->hasRole(Role::TEACHER)) {
             $query->whereHas('teachers', fn ($q) => $q->where('users.id', $user->id));
@@ -39,9 +39,42 @@ class CourseController extends Controller
             $query->whereHas('students', fn ($q) => $q->where('users.id', $user->id));
         }
 
-        $courses = $query->paginate(10);
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('title', 'like', "%{$q}%")
+                    ->orWhereHas('subject', fn ($sq) => $sq->where('name_id', 'like', "%{$q}%"))
+                    ->orWhereHas('schoolClass', fn ($cq) => $cq->where('name', 'like', "%{$q}%"));
+            });
+        }
 
-        return view('courses.index', compact('courses'));
+        if ($subjectId = $request->integer('subject_id')) {
+            $query->where('subject_id', $subjectId);
+        }
+
+        if ($classId = $request->integer('class_id')) {
+            $query->where('class_id', $classId);
+        }
+
+        if ($yearId = $request->integer('academic_year_id')) {
+            $query->where('academic_year_id', $yearId);
+        }
+
+        if ($semesterId = $request->integer('semester_id')) {
+            $query->where('semester_id', $semesterId);
+        }
+
+        if ($request->filled('is_published')) {
+            $query->where('is_published', (bool) $request->boolean('is_published'));
+        }
+
+        $courses = $query->orderBy('title')->paginate(10)->withQueryString();
+
+        $subjects = Subject::where('is_active', true)->orderBy('name_id')->get();
+        $classes = SchoolClass::where('is_active', true)->orderBy('name')->get();
+        $academicYears = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
+        $semesters = Semester::orderByDesc('is_active')->orderByDesc('id')->get();
+
+        return view('courses.index', compact('courses', 'subjects', 'classes', 'academicYears', 'semesters'));
     }
 
     public function create(): View

@@ -10,25 +10,40 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search academic year name">
+        <x-slot:filters>
+            <div>
+                <label class="tera-label">{{ __('ui.active') }}</label>
+                <select name="is_active" class="tera-select">
+                    <option value="">All</option>
+                    <option value="1" @selected(request('is_active') === '1')>{{ __('ui.active') }}</option>
+                    <option value="0" @selected(request('is_active') === '0')>{{ __('ui.inactive') }}</option>
+                </select>
+            </div>
+        </x-slot:filters>
+    </x-ui.table-toolbar>
+
     <div class="tera-table-wrap">
         <table class="tera-table">
             <thead>
             <tr>
-                <th class="text-left">{{ __('ui.name') }}</th>
-                <th class="text-center">{{ __('ui.start') }}</th>
-                <th class="text-center">{{ __('ui.end') }}</th>
-                <th class="text-center">{{ __('ui.active') }}</th>
-                <th class="text-right">{{ __('ui.action') }}</th>
+                <th>No</th>
+                <th>{{ __('ui.name') }}</th>
+                <th>{{ __('ui.start') }}</th>
+                <th>{{ __('ui.end') }}</th>
+                <th>{{ __('ui.active') }}</th>
+                <th>{{ __('ui.action') }}</th>
             </tr>
             </thead>
             <tbody>
             @foreach($academicYears as $year)
                 <tr>
+                    <td>{{ $academicYears->firstItem() + $loop->index }}</td>
                     <td class="font-semibold">{{ $year->name }}</td>
-                    <td class="text-center">{{ $year->start_date?->format('Y-m-d') }}</td>
-                    <td class="text-center">{{ $year->end_date?->format('Y-m-d') }}</td>
-                    <td class="text-center"><span class="tera-badge {{ $year->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $year->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td class="text-right">
+                    <td>{{ $year->start_date?->format('Y-m-d') }}</td>
+                    <td>{{ $year->end_date?->format('Y-m-d') }}</td>
+                    <td><span class="tera-badge {{ $year->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $year->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                    <td>
                         <div class="inline-flex gap-2">
                             <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $year->id }})">{{ __('ui.edit') }}</button>
                             <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $year->id }}, @js($year->name))">{{ __('ui.delete') }}</button>

@@ -10,19 +10,52 @@ use App\Models\Subject;
 use App\Models\SubjectTeacher;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class SubjectTeacherAssignmentController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $assignments = SubjectTeacher::query()
-            ->with(['subject:id,name_id,code', 'teacher:id,full_name,nip', 'academicYear:id,name'])
-            ->latest()
-            ->paginate(12);
+        $query = SubjectTeacher::query()
+            ->with(['subject:id,name_id,code', 'teacher:id,full_name,nip', 'academicYear:id,name']);
 
-        return view('assignments.subject-teachers.index', compact('assignments'));
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->whereHas('teacher', function ($tw) use ($q): void {
+                    $tw->where('full_name', 'like', "%{$q}%")
+                        ->orWhere('nip', 'like', "%{$q}%");
+                })->orWhereHas('subject', function ($sw) use ($q): void {
+                    $sw->where('name_id', 'like', "%{$q}%")
+                        ->orWhere('code', 'like', "%{$q}%");
+                });
+            });
+        }
+
+        if ($subjectId = $request->integer('subject_id')) {
+            $query->where('subject_id', $subjectId);
+        }
+
+        if ($yearId = $request->integer('academic_year_id')) {
+            $query->where('academic_year_id', $yearId);
+        }
+
+        if ($request->filled('is_active')) {
+            $query->where('is_active', (bool) $request->boolean('is_active'));
+        }
+
+        $assignments = $query
+            ->join('users', 'users.id', '=', 'subject_teachers.teacher_id')
+            ->orderBy('users.full_name')
+            ->select('subject_teachers.*')
+            ->paginate(12)
+            ->withQueryString();
+
+        $subjects = Subject::where('is_active', true)->orderBy('name_id')->get();
+        $years = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
+
+        return view('assignments.subject-teachers.index', compact('assignments', 'subjects', 'years'));
     }
 
     public function create(): View

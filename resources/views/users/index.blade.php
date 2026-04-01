@@ -15,36 +15,61 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search name, username, NIS, NIP">
+        <x-slot:filters>
+            <div>
+                <label class="tera-label">Role</label>
+                <select name="role_id" class="tera-select">
+                    <option value="">All Roles</option>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->id }}" @selected((string)request('role_id') === (string)$role->id)>{{ $role->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="tera-label">Class</label>
+                <select name="class_id" class="tera-select">
+                    <option value="">All Classes</option>
+                    @foreach($classes as $klass)
+                        <option value="{{ $klass->id }}" @selected((string)request('class_id') === (string)$klass->id)>{{ $klass->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </x-slot:filters>
+    </x-ui.table-toolbar>
+
     <div class="tera-table-wrap">
         <table class="tera-table">
             <thead>
                 <tr>
-                    <th class="text-left">{{ __('ui.name') }}</th>
-                    <th class="text-left">{{ __('ui.role') }}</th>
-                    <th class="text-center">NIS</th>
-                    <th class="text-center">NIP</th>
-                    <th class="text-left">{{ __('ui.email') }}</th>
-                    <th class="text-center">{{ __('ui.status') }}</th>
-                    <th class="text-right">{{ __('ui.action') }}</th>
+                    <th>No</th>
+                    <th>{{ __('ui.name') }}</th>
+                    <th>{{ __('ui.role') }}</th>
+                    <th>NIS</th>
+                    <th>NIP</th>
+                    <th>{{ __('ui.email') }}</th>
+                    <th>{{ __('ui.status') }}</th>
+                    <th>{{ __('ui.action') }}</th>
                 </tr>
             </thead>
             <tbody>
             @foreach($users as $user)
                 <tr id="user-row-{{ $user->id }}">
+                    <td>{{ $users->firstItem() + $loop->index }}</td>
                     <td>
                         <p class="font-semibold text-slate-800">{{ $user->full_name }}</p>
                         <p class="text-xs text-slate-500">{{ $user->username }}</p>
                     </td>
                     <td>{{ $user->role?->name }}</td>
-                    <td class="text-center">{{ $user->nis ?: '-' }}</td>
-                    <td class="text-center">{{ $user->nip ?: '-' }}</td>
+                    <td>{{ $user->nis ?: '-' }}</td>
+                    <td>{{ $user->nip ?: '-' }}</td>
                     <td>{{ $user->email ?: '-' }}</td>
-                    <td class="text-center">
+                    <td>
                         <span class="tera-badge {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
                             {{ $user->is_active ? __('ui.active') : __('ui.inactive') }}
                         </span>
                     </td>
-                    <td class="text-right">
+                    <td>
                         <div class="inline-flex items-center gap-2">
                             <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $user->id }})">{{ __('ui.edit') }}</button>
                             <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyUser({{ $user->id }}, @js($user->full_name))">{{ __('ui.delete') }}</button>

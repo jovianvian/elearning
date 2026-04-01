@@ -1,40 +1,52 @@
 @extends('layouts.app', ['title' => 'Exam Scores'])
 
 @section('content')
-    <div class="bg-white border rounded-xl p-5">
-        <h2 class="text-xl font-semibold">Student Scores</h2>
-        <p class="text-sm text-slate-500">{{ $exam->title }}</p>
-    </div>
+    <x-ui.page-header title="Student Scores" :subtitle="$exam->title" />
 
-    <div class="bg-white border rounded-xl overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-slate-600">
-            <tr>
-                <th class="p-3 text-left">Student</th>
-                <th class="p-3 text-center">Status</th>
-                <th class="p-3 text-center">Objective</th>
-                <th class="p-3 text-center">Essay</th>
-                <th class="p-3 text-center">Final</th>
-                <th class="p-3 text-center">Published</th>
-            </tr>
+    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search student name or NIS">
+        <x-slot:filters>
+            <div>
+                <label class="tera-label">{{ __('ui.status') }}</label>
+                <select name="status" class="tera-select">
+                    <option value="">All</option>
+                    @foreach(['submitted','auto_submitted','graded'] as $status)
+                        <option value="{{ $status }}" @selected(request('status') === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </x-slot:filters>
+    </x-ui.table-toolbar>
+
+    <div class="tera-table-wrap">
+        <table class="tera-table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Student</th>
+                    <th>Status</th>
+                    <th>Objective</th>
+                    <th>Essay</th>
+                    <th>Final</th>
+                    <th>Published</th>
+                </tr>
             </thead>
             <tbody>
-            @forelse($attempts as $attempt)
-                <tr class="border-t border-slate-100">
-                    <td class="p-3">{{ $attempt->student?->full_name }}</td>
-                    <td class="p-3 text-center">{{ $attempt->status }}</td>
-                    <td class="p-3 text-center">{{ $attempt->score_objective }}</td>
-                    <td class="p-3 text-center">{{ $attempt->score_essay }}</td>
-                    <td class="p-3 text-center font-semibold">{{ $attempt->final_score }}</td>
-                    <td class="p-3 text-center">{{ $attempt->is_published ? 'Yes' : 'No' }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="p-6 text-center text-slate-500">No score data.</td></tr>
-            @endforelse
+                @forelse($attempts as $attempt)
+                    <tr>
+                        <td>{{ $attempts->firstItem() + $loop->index }}</td>
+                        <td>{{ $attempt->student?->full_name }}</td>
+                        <td>{{ $attempt->status }}</td>
+                        <td>{{ $attempt->score_objective }}</td>
+                        <td>{{ $attempt->score_essay }}</td>
+                        <td class="font-semibold">{{ $attempt->final_score }}</td>
+                        <td>{{ $attempt->is_published ? 'Yes' : 'No' }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="7" class="py-6 text-center text-slate-500">No score data.</td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>
 
-    {{ $attempts->links() }}
+    <div class="mt-4">{{ $attempts->links() }}</div>
 @endsection
-

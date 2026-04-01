@@ -1,12 +1,12 @@
 @extends('layouts.app', ['title' => 'Exam Results'])
 
 @section('content')
-    <div class="bg-white rounded-xl border border-slate-200 p-6">
+    <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         <h2 class="text-xl font-semibold">Exam Results</h2>
         <p class="text-sm text-slate-500">{{ $exam->title }} - {{ $exam->course?->title }}</p>
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+    <div class="bg-white rounded-xl border border-slate-200 mobile-table-scroll">
         <table class="w-full text-sm">
             <thead class="bg-slate-50 text-slate-600">
             <tr>
@@ -39,4 +39,3 @@
 
     {{ $attempts->links() }}
 @endsection
-

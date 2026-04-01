@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-3">
+        <div class="flex items-center gap-1.5 sm:gap-3">
             <div x-data="{ switching: false }" class="hidden sm:flex items-center rounded-xl border border-slate-200 bg-slate-50 px-1 py-1">
                 <button
                     type="button"
@@ -86,7 +86,7 @@
                         <span class="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-redx text-white text-[10px] font-bold grid place-items-center">{{ $notifCount }}</span>
                     @endif
                 </button>
-                <div x-show="open" x-cloak @click.outside="open = false" class="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-soft overflow-hidden">
+                <div x-show="open" x-cloak @click.outside="open = false" class="absolute right-0 mt-2 w-[90vw] max-w-80 bg-white border border-slate-200 rounded-2xl shadow-soft overflow-hidden">
                     <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                         <h3 class="text-sm font-bold">{{ __('ui.notifications') }}</h3>
                         <a href="{{ route('notifications.index') }}" class="text-xs text-primary font-semibold">{{ __('ui.view_all') }}</a>
@@ -106,7 +106,7 @@
             </div>
 
             <div x-data="{ open: false }" class="relative">
-                <button class="flex items-center gap-2 rounded-xl border border-slate-200 pl-2 pr-3 py-1.5 hover:bg-slate-50" @click="open = !open">
+                <button class="flex items-center gap-2 rounded-xl border border-slate-200 pl-1.5 sm:pl-2 pr-2 sm:pr-3 py-1.5 hover:bg-slate-50" @click="open = !open">
                     <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-skyx text-white grid place-items-center font-bold text-xs">
                         {{ strtoupper(substr(auth()->user()->full_name ?? 'U', 0, 1)) }}
                     </div>

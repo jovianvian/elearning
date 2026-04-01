@@ -12,9 +12,23 @@ use Illuminate\View\View;
 
 class SubjectController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $subjects = Subject::latest()->paginate(10);
+        $query = Subject::query();
+
+        if ($q = trim((string) $request->string('q'))) {
+            $query->where(function ($w) use ($q): void {
+                $w->where('name_id', 'like', "%{$q}%")
+                    ->orWhere('name_en', 'like', "%{$q}%")
+                    ->orWhere('code', 'like', "%{$q}%");
+            });
+        }
+
+        if ($request->filled('is_active')) {
+            $query->where('is_active', (bool) $request->boolean('is_active'));
+        }
+
+        $subjects = $query->orderBy('name_id')->paginate(10)->withQueryString();
 
         return view('subjects.index', compact('subjects'));
     }
