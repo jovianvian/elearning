@@ -92,13 +92,32 @@ class User extends Authenticatable
 
     public function hasRole(string ...$codes): bool
     {
-        $roleCode = $this->role?->code;
+        $roleCode = $this->normalizeRoleCode($this->role?->code);
+        if ($roleCode === null) {
+            return false;
+        }
 
-        return $roleCode !== null && in_array($roleCode, $codes, true);
+        $normalizedCodes = array_map(fn (string $code): string => $this->normalizeRoleCode($code) ?? $code, $codes);
+
+        return in_array($roleCode, $normalizedCodes, true);
     }
 
     public function getNameAttribute(): string
     {
         return $this->full_name;
+    }
+
+    private function normalizeRoleCode(?string $code): ?string
+    {
+        if ($code === null) {
+            return null;
+        }
+
+        $normalized = strtolower(str_replace('-', '_', trim($code)));
+        if ($normalized === 'superadmin') {
+            return Role::SUPER_ADMIN;
+        }
+
+        return $normalized;
     }
 }

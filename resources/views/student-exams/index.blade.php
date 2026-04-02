@@ -8,6 +8,7 @@
 
     <div class="grid md:grid-cols-2 gap-4">
         @forelse($exams as $exam)
+            @php($latestAttempt = $exam->latest_attempt)
             <div class="bg-white rounded-xl border border-slate-200 p-5">
                 <div class="flex justify-between items-start gap-3">
                     <div>
@@ -22,10 +23,21 @@
                     <div>Duration: {{ $exam->duration_minutes }} min | Max attempt: {{ $exam->max_attempts }}</div>
                 </div>
 
-                <form method="POST" action="{{ route('student-exams.start', $exam) }}" class="mt-4">
-                    @csrf
-                    <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm">Start / Continue</button>
-                </form>
+                @if($latestAttempt && $latestAttempt->status !== \App\Models\ExamAttempt::STATUS_IN_PROGRESS)
+                    <div class="mt-4 flex items-center justify-between gap-2">
+                        <span class="text-xs text-slate-500">Status attempt: {{ str_replace('_', ' ', $latestAttempt->status) }}</span>
+                        <a href="{{ route('student-exams.attempt.result', $latestAttempt) }}" class="tera-btn tera-btn-primary !px-4 !py-2 !text-sm">
+                            {{ $latestAttempt->is_published || $exam->show_result_after_submit ? 'View Result' : 'Waiting Result' }}
+                        </a>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('student-exams.start', $exam) }}" class="mt-4">
+                        @csrf
+                        <button class="tera-btn tera-btn-primary !px-4 !py-2 !text-sm">
+                            {{ $latestAttempt ? 'Continue Attempt' : 'Start Exam' }}
+                        </button>
+                    </form>
+                @endif
             </div>
         @empty
             <div class="bg-white rounded-xl border border-slate-200 p-6 text-slate-500">No exams available right now.</div>
@@ -34,4 +46,3 @@
 
     {{ $exams->links() }}
 @endsection
-

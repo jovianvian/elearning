@@ -7,6 +7,7 @@ use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class ExamAccessService
 {
@@ -20,7 +21,16 @@ class ExamAccessService
             return false;
         }
 
-        return $course->teachers()->where('users.id', $user->id)->exists();
+        if ($course->teachers()->where('users.id', $user->id)->exists()) {
+            return true;
+        }
+
+        // Fallback: some schools only assign teacher at subject level.
+        return DB::table('subject_teachers')
+            ->where('teacher_id', $user->id)
+            ->where('subject_id', $course->subject_id)
+            ->where('is_active', 1)
+            ->exists();
     }
 
     public function canManageExam(User $user, Exam $exam): bool
@@ -73,4 +83,3 @@ class ExamAccessService
         return false;
     }
 }
-

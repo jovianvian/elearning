@@ -4,9 +4,9 @@
 <div x-data="questionBankCrudPage({ subjects: @js(($subjects ?? collect())->map(fn($s) => ['id' => $s->id, 'name' => $s->name_id, 'code' => $s->code])->values()) })">
     <x-ui.page-header title="Question Bank Management" subtitle="Manage shared and private subject question banks.">
         <x-slot:actions>
-            <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
+            <a href="{{ route('question-banks.create') }}" class="tera-btn tera-btn-primary">
                 <i data-lucide="plus" class="w-4 h-4"></i>{{ __('ui.add_question_bank') }}
-            </button>
+            </a>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -63,7 +63,7 @@
                     <td>
                         <div class="inline-flex justify-center gap-2">
                             <a href="{{ route('question-banks.show', $bank) }}" class="tera-btn tera-btn-muted !px-3 !py-1.5">{{ __('ui.view') }}</a>
-                            <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $bank->id }})">{{ __('ui.edit') }}</button>
+                            <a href="{{ route('question-banks.edit', $bank) }}" class="tera-btn tera-btn-muted !px-3 !py-1.5">{{ __('ui.edit') }}</a>
                             <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $bank->id }}, @js($bank->title))">{{ __('ui.delete') }}</button>
                         </div>
                     </td>
@@ -255,5 +255,4 @@ function questionBankCrudPage({ subjects }) {
 }
 </script>
 @endsection
-
 

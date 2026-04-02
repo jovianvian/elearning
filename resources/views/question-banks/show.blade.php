@@ -1,22 +1,26 @@
 @extends('layouts.app')
 
 @section('content')
+    <x-ui.page-header title="{{ $questionBank->title }}" subtitle="Manage questions inside this bank and keep content quality consistent.">
+        <x-slot:actions>
+            @if($canManage ?? false)
+                <a href="{{ route('question-banks.create') }}" class="tera-btn tera-btn-muted">Add Bank</a>
+                <a href="{{ route('question-banks.edit', $questionBank) }}" class="tera-btn tera-btn-muted">Edit Bank</a>
+            @endif
+            <a href="{{ route('question-banks.questions.create', $questionBank) }}" class="tera-btn tera-btn-primary">Add Question</a>
+            <a href="{{ route('question-banks.index') }}" class="tera-btn tera-btn-muted">Back</a>
+        </x-slot:actions>
+    </x-ui.page-header>
+
     <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
-        <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
-            <div>
-                <h2 class="text-xl font-semibold">{{ $questionBank->title }}</h2>
-                <p class="text-sm text-slate-500 mt-1">
-                    Subject: {{ $questionBank->subject->name_id ?? '-' }} |
-                    Visibility: {{ $questionBank->visibility }}
-                </p>
-                @if($questionBank->description)
-                    <p class="text-sm mt-3 text-slate-600">{{ $questionBank->description }}</p>
-                @endif
-            </div>
-            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                <a href="{{ route('question-banks.questions.create', $questionBank) }}" class="px-4 py-2 bg-primary text-white rounded-lg text-sm">Add Question</a>
-                <a href="{{ route('question-banks.index') }}" class="px-4 py-2 border rounded-lg text-sm">Back</a>
-            </div>
+        <div>
+            <p class="text-sm text-slate-500">
+                Subject: {{ $questionBank->subject->name_id ?? '-' }} |
+                Visibility: {{ $questionBank->visibility }}
+            </p>
+            @if($questionBank->description)
+                <p class="text-sm mt-3 text-slate-600">{{ $questionBank->description }}</p>
+            @endif
         </div>
     </div>
 
@@ -62,11 +66,11 @@
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex justify-end gap-2">
-                            <a href="{{ route('questions.edit', $question) }}" class="px-3 py-1.5 rounded border text-xs">Edit</a>
+                            <a href="{{ route('questions.edit', $question) }}" class="tera-btn tera-btn-muted !px-3 !py-1.5 !text-xs">Edit</a>
                             <form method="POST" action="{{ route('questions.destroy', $question) }}" onsubmit="return confirm('Delete this question?')">
                                 @csrf
                                 @method('DELETE')
-                                <button class="px-3 py-1.5 rounded bg-redx text-white text-xs">Delete</button>
+                                <button class="tera-btn tera-btn-danger !px-3 !py-1.5 !text-xs">Delete</button>
                             </form>
                         </div>
                     </td>

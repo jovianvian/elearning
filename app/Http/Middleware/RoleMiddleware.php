@@ -22,8 +22,10 @@ class RoleMiddleware
             abort(403, 'Akses ditolak.');
         }
 
+        $currentRole = $this->normalizeRoleCode($user->role->code);
+
         // Super Admin can access all role-protected views.
-        if ($user->role->code === Role::SUPER_ADMIN) {
+        if ($currentRole === Role::SUPER_ADMIN) {
             return $next($request);
         }
 
@@ -35,15 +37,33 @@ class RoleMiddleware
             'admin' => Role::ADMIN,
             'super_admin' => Role::SUPER_ADMIN,
             'super-admin' => Role::SUPER_ADMIN,
+            'superadmin' => Role::SUPER_ADMIN,
             'principal' => Role::PRINCIPAL,
         ];
 
-        $normalized = array_map(static fn (string $role): string => $aliases[$role] ?? $role, $roles);
+        $normalized = array_map(function (string $role) use ($aliases): string {
+            $key = strtolower(str_replace('-', '_', trim($role)));
+            return $aliases[$key] ?? $key;
+        }, $roles);
 
-        if ($normalized !== [] && ! in_array($user->role->code, $normalized, true)) {
+        if ($normalized !== [] && ! in_array($currentRole, $normalized, true)) {
             abort(403, 'Kamu tidak memiliki izin untuk halaman ini.');
         }
 
         return $next($request);
+    }
+
+    private function normalizeRoleCode(?string $code): ?string
+    {
+        if ($code === null) {
+            return null;
+        }
+
+        $normalized = strtolower(str_replace('-', '_', trim($code)));
+        if ($normalized === 'superadmin') {
+            return Role::SUPER_ADMIN;
+        }
+
+        return $normalized;
     }
 }

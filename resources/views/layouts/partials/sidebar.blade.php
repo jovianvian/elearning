@@ -1,5 +1,10 @@
 @php
     $role = auth()->user()->role->code ?? '';
+    $role = strtolower((string) $role);
+    $role = str_replace('-', '_', $role);
+    if ($role === 'superadmin') {
+        $role = 'super_admin';
+    }
 
     $isActive = function (array $patterns): bool {
         foreach ($patterns as $pattern) {

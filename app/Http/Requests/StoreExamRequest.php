@@ -17,6 +17,7 @@ class StoreExamRequest extends FormRequest
     {
         return [
             'course_id' => ['required', 'integer', Rule::exists('courses', 'id')],
+            'question_bank_id' => ['nullable', 'integer', Rule::exists('question_banks', 'id')],
             'title' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
             'exam_type' => ['required', Rule::in(['objective', 'essay', 'mixed'])],
@@ -43,4 +44,3 @@ class StoreExamRequest extends FormRequest
         ];
     }
 }
-

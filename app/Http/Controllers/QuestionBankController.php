@@ -94,8 +94,9 @@ class QuestionBankController extends Controller
 
         $questionBank->load(['subject', 'creator']);
         $questions = $questionBank->questions()->with('options')->latest()->paginate(10);
+        $canManage = $this->accessService->canManageBank(auth()->user(), $questionBank);
 
-        return view('question-banks.show', compact('questionBank', 'questions'));
+        return view('question-banks.show', compact('questionBank', 'questions', 'canManage'));
     }
 
     public function edit(Request $request, QuestionBank $questionBank): View|JsonResponse

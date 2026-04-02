@@ -158,7 +158,7 @@ class ExamEngineService
         }
 
         return DB::transaction(function () use ($attempt, $auto): ExamAttempt {
-            $attempt->loadMissing('answers.question');
+            $attempt->loadMissing(['exam', 'answers.question']);
 
             $scoreObjective = 0.0;
             $scoreEssay = 0.0;
@@ -180,7 +180,7 @@ class ExamEngineService
                 'score_objective' => $scoreObjective,
                 'score_essay' => $scoreEssay,
                 'final_score' => $scoreObjective + $scoreEssay,
-                'is_published' => false,
+                'is_published' => (bool) $attempt->exam?->show_result_after_submit,
             ]);
 
             $this->monitoringService->logEvent($attempt->fresh(), $auto ? 'auto_submit' : 'exam_submit');

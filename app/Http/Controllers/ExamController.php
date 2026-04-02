@@ -9,11 +9,13 @@ use App\Models\Course;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\Question;
+use App\Models\QuestionBank;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Subject;
 use App\Services\ExamAccessService;
 use App\Services\ExamEngineService;
+use App\Services\QuestionAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +26,8 @@ class ExamController extends Controller
 {
     public function __construct(
         private readonly ExamAccessService $accessService,
-        private readonly ExamEngineService $engineService
+        private readonly ExamEngineService $engineService,
+        private readonly QuestionAccessService $questionAccessService
     ) {
     }
 
@@ -87,13 +90,15 @@ class ExamController extends Controller
         $this->authorizeManageEntry();
 
         $courses = $this->manageableCourses();
+        $questionBanks = $this->accessibleQuestionBanks();
         $questions = Question::query()
             ->where('is_active', true)
             ->with(['subject', 'bank'])
+            ->whereIn('question_bank_id', $questionBanks->pluck('id'))
             ->orderByDesc('id')
             ->get();
 
-        return view('exams.create', compact('courses', 'questions'));
+        return view('exams.create', compact('courses', 'questions', 'questionBanks'));
     }
 
     public function store(StoreExamRequest $request): RedirectResponse
@@ -103,10 +108,18 @@ class ExamController extends Controller
         $data = $request->validated();
         $course = Course::query()->with('subject')->findOrFail((int) $data['course_id']);
         abort_unless($this->accessService->canManageCourseExam(auth()->user(), $course), 403);
+        $selectedBankId = isset($data['question_bank_id']) && $data['question_bank_id'] !== null
+            ? (int) $data['question_bank_id']
+            : null;
+        if ($selectedBankId !== null) {
+            $bank = QuestionBank::query()->findOrFail($selectedBankId);
+            abort_unless($this->questionAccessService->canViewBank(auth()->user(), $bank), 403);
+        }
 
         $questionIds = array_map('intval', $data['question_ids']);
         $questions = Question::query()->whereIn('id', $questionIds)->get()->keyBy('id');
         $this->validateQuestionSubjectAlignment($course, $questionIds, $questions->all());
+        $this->validateSelectedBankAlignment($selectedBankId, $questions->all());
 
         $exam = DB::transaction(function () use ($data, $course, $questionIds, $questions): Exam {
             $exam = Exam::create([
@@ -169,13 +182,15 @@ class ExamController extends Controller
         abort_unless($this->accessService->canManageExam(auth()->user(), $exam), 403);
 
         $courses = $this->manageableCourses();
+        $questionBanks = $this->accessibleQuestionBanks();
         $questions = Question::query()
             ->where('is_active', true)
             ->with(['subject', 'bank'])
+            ->whereIn('question_bank_id', $questionBanks->pluck('id'))
             ->orderByDesc('id')
             ->get();
 
-        return view('exams.edit', compact('exam', 'courses', 'questions'));
+        return view('exams.edit', compact('exam', 'courses', 'questions', 'questionBanks'));
     }
 
     public function update(UpdateExamRequest $request, Exam $exam): RedirectResponse
@@ -186,10 +201,18 @@ class ExamController extends Controller
         $data = $request->validated();
         $course = Course::query()->with('subject')->findOrFail((int) $data['course_id']);
         abort_unless($this->accessService->canManageCourseExam(auth()->user(), $course), 403);
+        $selectedBankId = isset($data['question_bank_id']) && $data['question_bank_id'] !== null
+            ? (int) $data['question_bank_id']
+            : null;
+        if ($selectedBankId !== null) {
+            $bank = QuestionBank::query()->findOrFail($selectedBankId);
+            abort_unless($this->questionAccessService->canViewBank(auth()->user(), $bank), 403);
+        }
 
         $questionIds = array_values(array_unique(array_map('intval', $data['question_ids'])));
         $questions = Question::query()->whereIn('id', $questionIds)->get()->keyBy('id');
         $this->validateQuestionSubjectAlignment($course, $questionIds, $questions->all());
+        $this->validateSelectedBankAlignment($selectedBankId, $questions->all());
 
         DB::transaction(function () use ($exam, $data, $course, $questionIds, $questions): void {
             $exam->update([
@@ -267,7 +290,16 @@ class ExamController extends Controller
             ->latest();
 
         if ($user->hasRole(Role::TEACHER)) {
-            $query->whereHas('teachers', fn ($q) => $q->where('users.id', $user->id));
+            $query->where(function ($outer) use ($user): void {
+                $outer->whereHas('teachers', fn ($q) => $q->where('users.id', $user->id))
+                    ->orWhereExists(function ($sub) use ($user): void {
+                        $sub->select(DB::raw(1))
+                            ->from('subject_teachers')
+                            ->whereColumn('subject_teachers.subject_id', 'courses.subject_id')
+                            ->where('subject_teachers.teacher_id', $user->id)
+                            ->where('subject_teachers.is_active', 1);
+                    });
+            });
         }
 
         return $query->get();
@@ -288,5 +320,32 @@ class ExamController extends Controller
                 ]);
             }
         }
+    }
+
+    private function validateSelectedBankAlignment(?int $selectedBankId, array $questions): void
+    {
+        if ($selectedBankId === null) {
+            return;
+        }
+
+        foreach ($questions as $question) {
+            if ((int) $question->question_bank_id !== $selectedBankId) {
+                throw ValidationException::withMessages([
+                    'question_ids' => 'Selected questions must come from the selected question bank.',
+                ]);
+            }
+        }
+    }
+
+    private function accessibleQuestionBanks()
+    {
+        $query = QuestionBank::query()
+            ->with('subject')
+            ->withCount(['questions' => fn ($q) => $q->where('is_active', true)])
+            ->orderByDesc('id');
+
+        return $this->questionAccessService
+            ->scopeAccessibleBanks($query, auth()->user())
+            ->get();
     }
 }

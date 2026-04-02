@@ -37,6 +37,20 @@ class StudentExamAttemptController extends Controller
             ->latest()
             ->paginate(10);
 
+        $latestAttempts = ExamAttempt::query()
+            ->whereIn('exam_id', $exams->pluck('id'))
+            ->where('student_id', $studentId)
+            ->latest('id')
+            ->get()
+            ->unique('exam_id')
+            ->keyBy('exam_id');
+
+        $exams->getCollection()->transform(function (Exam $exam) use ($latestAttempts) {
+            $exam->setAttribute('latest_attempt', $latestAttempts->get($exam->id));
+
+            return $exam;
+        });
+
         return view('student-exams.index', compact('exams'));
     }
 
@@ -103,7 +117,7 @@ class StudentExamAttemptController extends Controller
         abort_unless($this->accessService->canViewAttempt(auth()->user(), $attempt), 403);
         abort_unless(auth()->user()->hasRole(Role::STUDENT), 403);
 
-        if (! $attempt->is_published) {
+        if (! $attempt->is_published && ! $attempt->exam?->show_result_after_submit) {
             return view('student-exams.result-hidden', compact('attempt'));
         }
 
@@ -148,4 +162,3 @@ class StudentExamAttemptController extends Controller
         return (int) ($orderMap[$questionId] ?? 9999);
     }
 }
-

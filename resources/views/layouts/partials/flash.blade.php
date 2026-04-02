@@ -16,12 +16,22 @@
     </div>
 @endif
 
-@if($errors->any())
+@php
+    $flashErrorMessage = null;
+
+    if (is_object($errors) && method_exists($errors, 'any') && $errors->any()) {
+        $flashErrorMessage = $errors->first();
+    } elseif (is_array($errors) && !empty($errors)) {
+        $first = reset($errors);
+        $flashErrorMessage = is_array($first) ? (string) reset($first) : (string) $first;
+    }
+@endphp
+
+@if(!empty($flashErrorMessage))
     <div class="tera-card border-amber-200 bg-amber-50/80">
         <div class="tera-card-body flex items-center gap-3 text-amber-800">
             <i data-lucide="circle-alert" class="w-5 h-5"></i>
-            <p class="text-sm font-medium">{{ $errors->first() }}</p>
+            <p class="text-sm font-medium">{{ $flashErrorMessage }}</p>
         </div>
     </div>
 @endif
-

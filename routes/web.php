@@ -104,9 +104,9 @@ Route::middleware(['auth', 'ensure.password.changed'])->group(function (): void 
 
     Route::middleware('role:super_admin,admin,teacher,principal')->group(function (): void {
         Route::get('exams', [ExamController::class, 'index'])->name('exams.index');
-        Route::get('exams/{exam}', [ExamController::class, 'show'])->name('exams.show');
+        Route::get('exams/{exam}', [ExamController::class, 'show'])->whereNumber('exam')->name('exams.show');
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-        Route::get('reports/exams/{exam}/scores', [ReportController::class, 'examScores'])->name('reports.exam-scores');
+        Route::get('reports/exams/{exam}/scores', [ReportController::class, 'examScores'])->whereNumber('exam')->name('reports.exam-scores');
     });
 
     Route::middleware('role:super_admin,admin,teacher')->group(function (): void {
