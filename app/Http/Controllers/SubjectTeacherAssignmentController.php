@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\Subject;
 use App\Models\SubjectTeacher;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -111,9 +112,16 @@ class SubjectTeacherAssignmentController extends Controller
         return redirect()->route('assignments.subject-teachers.index')->with('success', 'Teacher subject assignment updated.');
     }
 
-    public function destroy(SubjectTeacher $subject_teacher): RedirectResponse
+    public function destroy(Request $request, SubjectTeacher $subject_teacher): RedirectResponse|JsonResponse
     {
         $subject_teacher->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Teacher subject assignment deleted.',
+            ]);
+        }
 
         return redirect()->route('assignments.subject-teachers.index')->with('success', 'Teacher subject assignment deleted.');
     }

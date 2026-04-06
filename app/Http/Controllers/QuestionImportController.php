@@ -83,8 +83,8 @@ class QuestionImportController extends Controller
             return back()->withInput()->with('error', 'AIKEN import requires .txt file.');
         }
 
-        if ($data['import_type'] === 'csv' && ! in_array($extension, ['csv', 'txt'], true)) {
-            return back()->withInput()->with('error', 'CSV import requires .csv file.');
+        if ($data['import_type'] === 'csv' && ! in_array($extension, ['csv', 'txt', 'xlsx'], true)) {
+            return back()->withInput()->with('error', 'CSV import supports .csv or .xlsx file.');
         }
 
         if ($data['import_type'] === 'aiken') {

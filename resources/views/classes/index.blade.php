@@ -4,7 +4,7 @@
 <div x-data="classCrudPage({
     teachers: @js($teachers->map(fn($t) => ['id' => $t->id, 'full_name' => $t->full_name])->values()),
     years: @js($academicYears->map(fn($y) => ['id' => $y->id, 'name' => $y->name])->values())
-})">
+})" data-async-list data-fragment="#classes-table-fragment">
     <x-ui.page-header title="Class Management" subtitle="Manage active class structure for the current academic year.">
         <x-slot:actions>
             <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
@@ -36,41 +36,43 @@
         </x-slot:filters>
     </x-ui.table-toolbar>
 
-    <div class="tera-table-wrap">
-        <table class="tera-table">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>{{ __('ui.name') }}</th>
-                    <th>{{ __('ui.grade_level') }}</th>
-                    <th>{{ __('ui.academic_year') }}</th>
-                    <th>{{ __('ui.homeroom_teacher') }}</th>
-                    <th>{{ __('ui.active') }}</th>
-                    <th>{{ __('ui.action') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach($classes as $class)
-                <tr>
-                    <td>{{ $classes->firstItem() + $loop->index }}</td>
-                    <td class="font-semibold">{{ $class->name }}</td>
-                    <td>{{ $class->grade_level }}</td>
-                    <td>{{ $class->academicYear?->name }}</td>
-                    <td>{{ $class->homeroomTeacher?->full_name ?: '-' }}</td>
-                    <td><span class="tera-badge {{ $class->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $class->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td>
-                        <div class="inline-flex items-center gap-2">
-                            <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $class->id }})">{{ __('ui.edit') }}</button>
-                            <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $class->id }}, @js($class->name))">{{ __('ui.delete') }}</button>
-                        </div>
-                    </td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    </div>
+    <div id="classes-table-fragment">
+        <div class="tera-table-wrap">
+            <table class="tera-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>{{ __('ui.name') }}</th>
+                        <th>{{ __('ui.grade_level') }}</th>
+                        <th>{{ __('ui.academic_year') }}</th>
+                        <th>{{ __('ui.homeroom_teacher') }}</th>
+                        <th>{{ __('ui.active') }}</th>
+                        <th>{{ __('ui.action') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($classes as $class)
+                    <tr>
+                        <td>{{ $classes->firstItem() + $loop->index }}</td>
+                        <td class="font-semibold">{{ $class->name }}</td>
+                        <td>{{ $class->grade_level }}</td>
+                        <td>{{ $class->academicYear?->name }}</td>
+                        <td>{{ $class->homeroomTeacher?->full_name ?: '-' }}</td>
+                        <td><span class="tera-badge {{ $class->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $class->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                        <td>
+                            <div class="inline-flex items-center gap-2">
+                                <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $class->id }})">{{ __('ui.edit') }}</button>
+                                <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $class->id }}, @js($class->name))">{{ __('ui.delete') }}</button>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
 
-    <div class="mt-4">{{ $classes->links() }}</div>
+        <div class="mt-4">{{ $classes->links() }}</div>
+    </div>
 
     <x-ui.modal name="showModal" :title="__('ui.class_form')" maxWidth="max-w-3xl">
         <form @submit.prevent="submitForm" class="space-y-4">
@@ -175,11 +177,8 @@ function classCrudPage({ teachers, years }) {
             this.loading = true;
             this.errors = {};
             try {
-                const res = await fetch(`/classes/${id}/edit`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_load_class')));
+                const { response, payload } = await window.Teramia.fetchJson(`/classes/${id}/edit`);
+                if (!response.ok || !payload?.ok) throw new Error(payload?.message || @js(__('ui.failed_to_load_class')));
 
                 this.isEdit = true;
                 this.editId = id;
@@ -193,7 +192,7 @@ function classCrudPage({ teachers, years }) {
                 };
                 this.showModal = true;
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
@@ -207,19 +206,12 @@ function classCrudPage({ teachers, years }) {
             if (this.isEdit) body._method = 'PUT';
 
             try {
-                const res = await fetch(url, {
+                const { response, payload } = await window.Teramia.fetchJson(url, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify(body),
                 });
-                const payload = await res.json();
-                if (!res.ok) {
-                    if (res.status === 422) {
+                if (!response.ok) {
+                    if (response.status === 422) {
                         this.errors = payload.errors || {};
                         return;
                     }
@@ -227,46 +219,36 @@ function classCrudPage({ teachers, years }) {
                 }
 
                 this.showModal = false;
-                Swal.fire({ icon: 'success', title: @js(__('ui.success')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#classes-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
         },
 
         async destroyItem(id, name) {
-            const confirm = await Swal.fire({
-                title: @js(__('ui.delete_class_question')),
-                text: `Delete ${name}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                confirmButtonText: @js(__('ui.delete')),
-            });
+            const confirm = await window.Teramia.confirmDelete(
+                @js(__('ui.delete_class_question')),
+                `Delete ${name}?`
+            );
             if (!confirm.isConfirmed) return;
 
             try {
-                const res = await fetch(`/classes/${id}`, {
+                const { response, payload } = await window.Teramia.fetchJson(`/classes/${id}`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify({ _method: 'DELETE' }),
                 });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_class')));
-                Swal.fire({ icon: 'success', title: @js(__('ui.deleted')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                if (!response.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_class')));
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#classes-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             }
         },
     };
 }
 </script>
 @endsection
+

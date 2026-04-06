@@ -2,38 +2,39 @@
     $routeName = request()->route()?->getName() ?? '';
 
     $topbarMap = [
-        ['patterns' => ['dashboard.super-admin'], 'title' => 'Dashboard', 'subtitle' => 'Super Admin Panel'],
-        ['patterns' => ['dashboard.admin'], 'title' => 'Dashboard', 'subtitle' => 'Admin Panel'],
-        ['patterns' => ['dashboard.principal'], 'title' => 'Dashboard', 'subtitle' => 'Principal Panel'],
-        ['patterns' => ['dashboard.teacher'], 'title' => 'Dashboard', 'subtitle' => 'Teacher Panel'],
-        ['patterns' => ['dashboard.student'], 'title' => 'Dashboard', 'subtitle' => 'Student Panel'],
-        ['patterns' => ['users.*'], 'title' => 'Users', 'subtitle' => 'Account Management'],
-        ['patterns' => ['classes.*'], 'title' => 'Classes', 'subtitle' => 'Academic Structure'],
-        ['patterns' => ['subjects.*'], 'title' => 'Subjects', 'subtitle' => 'Academic Structure'],
-        ['patterns' => ['assignments.*'], 'title' => 'Assignments', 'subtitle' => 'Academic Mapping'],
-        ['patterns' => ['courses.*', 'my-courses.*'], 'title' => 'Courses', 'subtitle' => 'Course Management'],
-        ['patterns' => ['question-banks.*'], 'title' => 'Question Banks', 'subtitle' => 'Assessment Resources'],
-        ['patterns' => ['question-imports.*'], 'title' => 'Question Imports', 'subtitle' => 'Assessment Resources'],
-        ['patterns' => ['exams.*', 'student-exams.*'], 'title' => 'Exams', 'subtitle' => 'Assessment Management'],
-        ['patterns' => ['exam-grading.*'], 'title' => 'Grading', 'subtitle' => 'Assessment Management'],
-        ['patterns' => ['reports.*'], 'title' => 'Reports', 'subtitle' => 'Monitoring & Analytics'],
-        ['patterns' => ['suspicious-activities.*'], 'title' => 'Suspicious Logs', 'subtitle' => 'Monitoring & Analytics'],
-        ['patterns' => ['super-admin.audit-logs.*'], 'title' => 'Audit Logs', 'subtitle' => 'System Monitoring'],
-        ['patterns' => ['super-admin.login-logs.*'], 'title' => 'Login Logs', 'subtitle' => 'System Monitoring'],
-        ['patterns' => ['super-admin.restore-center.*'], 'title' => 'Restore Center', 'subtitle' => 'System Recovery'],
-        ['patterns' => ['super-admin.academic-years.*'], 'title' => 'Academic Years', 'subtitle' => 'System Configuration'],
-        ['patterns' => ['super-admin.semesters.*'], 'title' => 'Semesters', 'subtitle' => 'System Configuration'],
-        ['patterns' => ['super-admin.settings.*'], 'title' => 'Settings', 'subtitle' => 'System Configuration'],
+        ['patterns' => ['dashboard.super-admin'], 'title_key' => 'ui.dashboard', 'subtitle_key' => 'ui.super_admin_panel'],
+        ['patterns' => ['dashboard.admin'], 'title_key' => 'ui.dashboard', 'subtitle_key' => 'ui.admin_panel'],
+        ['patterns' => ['dashboard.principal'], 'title_key' => 'ui.dashboard', 'subtitle_key' => 'ui.principal_panel'],
+        ['patterns' => ['dashboard.teacher'], 'title_key' => 'ui.dashboard', 'subtitle_key' => 'ui.teacher_panel'],
+        ['patterns' => ['dashboard.student'], 'title_key' => 'ui.dashboard', 'subtitle_key' => 'ui.student_panel'],
+        ['patterns' => ['users.*'], 'title_key' => 'ui.users', 'subtitle_key' => 'ui.account_management'],
+        ['patterns' => ['classes.*'], 'title_key' => 'ui.classes', 'subtitle_key' => 'ui.academic_structure'],
+        ['patterns' => ['subjects.*'], 'title_key' => 'ui.subjects', 'subtitle_key' => 'ui.academic_structure'],
+        ['patterns' => ['assignments.*'], 'title_key' => 'ui.assignments', 'subtitle_key' => 'ui.academic_mapping'],
+        ['patterns' => ['courses.*', 'my-courses.*'], 'title_key' => 'ui.courses', 'subtitle_key' => 'ui.course_management'],
+        ['patterns' => ['question-banks.*'], 'title_key' => 'ui.question_banks', 'subtitle_key' => 'ui.assessment_resources'],
+        ['patterns' => ['question-imports.*'], 'title_key' => 'ui.question_imports', 'subtitle_key' => 'ui.assessment_resources'],
+        ['patterns' => ['exams.*', 'student-exams.*'], 'title_key' => 'ui.exams', 'subtitle_key' => 'ui.assessment_management'],
+        ['patterns' => ['exam-grading.*'], 'title_key' => 'ui.grading', 'subtitle_key' => 'ui.assessment_management'],
+        ['patterns' => ['reports.*'], 'title_key' => 'ui.reports', 'subtitle_key' => 'ui.monitoring_analytics'],
+        ['patterns' => ['suspicious-activities.*'], 'title_key' => 'ui.suspicious_logs', 'subtitle_key' => 'ui.monitoring_analytics'],
+        ['patterns' => ['super-admin.audit-logs.*'], 'title_key' => 'ui.audit_logs', 'subtitle_key' => 'ui.system_monitoring'],
+        ['patterns' => ['super-admin.login-logs.*'], 'title_key' => 'ui.login_logs', 'subtitle_key' => 'ui.system_monitoring'],
+        ['patterns' => ['super-admin.restore-center.*'], 'title_key' => 'ui.restore_center', 'subtitle_key' => 'ui.system_recovery'],
+        ['patterns' => ['super-admin.academic-years.*'], 'title_key' => 'ui.academic_years', 'subtitle_key' => 'ui.system_configuration'],
+        ['patterns' => ['super-admin.semesters.*'], 'title_key' => 'ui.semesters', 'subtitle_key' => 'ui.system_configuration'],
+        ['patterns' => ['super-admin.settings.*'], 'title_key' => 'ui.settings', 'subtitle_key' => 'ui.system_configuration'],
+        ['patterns' => ['notifications.*'], 'title_key' => 'ui.notifications', 'subtitle_key' => 'ui.account_notifications'],
     ];
 
     $topbarTitle = $title ?? __('ui.dashboard');
-    $topbarSubtitle = ($teraApp['app_name'] ?? config('app.name')) . ' • ' . ($teraApp['school_name'] ?? '');
+    $topbarSubtitle = ($teraApp['app_name'] ?? config('app.name')) . ' - ' . ($teraApp['school_name'] ?? '');
 
     foreach ($topbarMap as $entry) {
         foreach ($entry['patterns'] as $pattern) {
             if (request()->routeIs($pattern)) {
-                $topbarTitle = $entry['title'];
-                $topbarSubtitle = $entry['subtitle'];
+                $topbarTitle = __($entry['title_key']);
+                $topbarSubtitle = __($entry['subtitle_key']);
                 break 2;
             }
         }
@@ -83,7 +84,7 @@
                 <button type="button" class="relative inline-flex p-2 rounded-xl border border-slate-200 hover:bg-slate-50" @click="open = !open">
                     <i data-lucide="bell" class="w-5 h-5 text-slate-700"></i>
                     @if($notifCount > 0)
-                        <span class="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-redx text-white text-[10px] font-bold grid place-items-center">{{ $notifCount }}</span>
+                        <span id="topbar-unread-count" class="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-redx text-white text-[10px] font-bold grid place-items-center">{{ $notifCount }}</span>
                     @endif
                 </button>
                 <div x-show="open" x-cloak @click.outside="open = false" class="absolute right-0 mt-2 w-[90vw] max-w-80 bg-white border border-slate-200 rounded-2xl shadow-soft overflow-hidden">

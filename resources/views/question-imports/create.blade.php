@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <x-ui.page-header title="Import Questions" subtitle="Import question bank items from AIKEN (.txt) or CSV template." />
+    <x-ui.page-header title="Import Questions" subtitle="Import question bank items from AIKEN (.txt), CSV, or Excel (.xlsx)." />
 
     <div class="max-w-4xl space-y-4">
         <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
@@ -30,15 +30,15 @@
                     <label class="tera-label">Import Type</label>
                     <select name="import_type" class="tera-select" required>
                         <option value="aiken" @selected(old('import_type') === 'aiken')>AIKEN (Multiple Choice)</option>
-                        <option value="csv" @selected(old('import_type') === 'csv')>CSV (MCQ, Short Answer, Essay)</option>
+                        <option value="csv" @selected(old('import_type') === 'csv')>CSV / Excel (MCQ, Short Answer, Essay)</option>
                     </select>
                 </div>
             </div>
 
             <div>
                 <label class="tera-label">File</label>
-                <input type="file" name="file" class="tera-input" required>
-                <p class="mt-1 text-xs text-slate-500">Maksimal 5MB. Pastikan format sesuai template.</p>
+                <input type="file" name="file" class="tera-input" accept=".txt,.csv,.xlsx" required>
+                <p class="mt-1 text-xs text-slate-500">Maksimal 10MB. AIKEN pakai .txt, sedangkan format tabel bisa .csv atau .xlsx.</p>
             </div>
 
             <div class="flex flex-wrap gap-2 pt-1">

@@ -61,6 +61,7 @@ class SemesterController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Semester created.',
                 'data' => $semester->load('academicYear'),
             ]);
@@ -73,6 +74,7 @@ class SemesterController extends Controller
     {
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'data' => [
                     'id' => $semester->id,
                     'academic_year_id' => $semester->academic_year_id,
@@ -102,6 +104,7 @@ class SemesterController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Semester updated.',
                 'data' => $semester->fresh()->load('academicYear'),
             ]);
@@ -115,7 +118,10 @@ class SemesterController extends Controller
         $semester->delete();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Semester deleted.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'Semester deleted.',
+            ]);
         }
 
         return redirect()->route('super-admin.semesters.index')->with('success', 'Semester deleted.');

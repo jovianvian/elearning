@@ -275,20 +275,135 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        window.Teramia = {
+            csrf() {
+                return document.querySelector('meta[name="csrf-token"]')?.content || '';
+            },
+
+            async fetchJson(url, options = {}) {
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...options.headers,
+                };
+
+                if (options.body && !(options.body instanceof FormData)) {
+                    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+                }
+
+                if (!headers['X-CSRF-TOKEN']) {
+                    headers['X-CSRF-TOKEN'] = this.csrf();
+                }
+
+                const response = await fetch(url, { ...options, headers });
+                let payload = null;
+                try {
+                    payload = await response.json();
+                } catch (e) {
+                    payload = { ok: false, message: 'Invalid server response.' };
+                }
+
+                return { response, payload };
+            },
+
+            async toast(type, message, timer = 1400) {
+                await Swal.fire({
+                    icon: type,
+                    title: type === 'success' ? @json(__('ui.success')) : @json(__('ui.error')),
+                    text: message,
+                    timer,
+                    showConfirmButton: false,
+                });
+            },
+
+            async confirmDelete(title, text) {
+                return Swal.fire({
+                    title: title || @json(__('ui.delete_data_question')),
+                    text: text || @json(__('ui.delete_data_help')),
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#DC2626',
+                    cancelButtonColor: '#334155',
+                    confirmButtonText: @json(__('ui.yes_delete')),
+                    cancelButtonText: @json(__('ui.cancel'))
+                });
+            },
+
+            async refreshFragment(url, selector) {
+                const htmlRes = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const html = await htmlRes.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const incoming = doc.querySelector(selector);
+                const current = document.querySelector(selector);
+                if (incoming && current) {
+                    current.innerHTML = incoming.innerHTML;
+                    if (window.lucide?.createIcons) {
+                        window.lucide.createIcons();
+                    }
+                    return true;
+                }
+                return false;
+            },
+
+            wireAsyncList(rootElementOrSelector, fragmentSelector, formSelector = 'form[method="GET"]') {
+                const root = typeof rootElementOrSelector === 'string'
+                    ? document.querySelector(rootElementOrSelector)
+                    : rootElementOrSelector;
+                if (!root || root.dataset.asyncListBound === '1') return;
+
+                root.dataset.asyncListBound = '1';
+                const form = root.querySelector(formSelector);
+
+                const navigate = async (url) => {
+                    const nextUrl = typeof url === 'string' ? url : String(url);
+                    window.history.replaceState({}, '', nextUrl);
+                    await this.refreshFragment(nextUrl, fragmentSelector);
+                };
+
+                if (form) {
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const params = new URLSearchParams(new FormData(form));
+                        const action = form.getAttribute('action') || window.location.pathname;
+                        const url = `${action}?${params.toString()}`;
+                        await navigate(url);
+                    });
+                }
+
+                root.addEventListener('click', async (e) => {
+                    const link = e.target.closest('a[href]');
+                    if (!link) return;
+
+                    const href = link.getAttribute('href') || '';
+                    if (!href || href.startsWith('#')) return;
+                    if (!link.closest(fragmentSelector)) return;
+
+                    const abs = new URL(href, window.location.origin);
+                    if (!abs.searchParams.has('page')) return;
+
+                    e.preventDefault();
+                    await navigate(abs.pathname + abs.search);
+                });
+            },
+
+            setUnreadCount(count) {
+                const node = document.getElementById('topbar-unread-count');
+                if (!node) return;
+                const value = Number(count ?? 0);
+                if (Number.isNaN(value) || value <= 0) {
+                    node.remove();
+                    return;
+                }
+                node.textContent = String(value);
+            }
+        };
+
         window.teraSwitchLocale = async function (locale) {
             try {
-                const token = document.querySelector('meta[name="csrf-token"]')?.content;
+                const url = `/locale/${locale}?_ts=${Date.now()}`;
+                const { response } = await window.Teramia.fetchJson(url, { method: 'GET' });
 
-                const res = await fetch(`/locale/${locale}`, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': token,
-                    },
-                });
-
-                if (!res.ok) {
+                if (!response.ok) {
                     throw new Error('Failed to switch language.');
                 }
 
@@ -315,16 +430,7 @@
                     if (form.dataset.confirmed === '1') return;
                     e.preventDefault();
 
-                    Swal.fire({
-                        title: @json(__('ui.delete_data_question')),
-                        text: @json(__('ui.delete_data_help')),
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#DC2626',
-                        cancelButtonColor: '#334155',
-                        confirmButtonText: @json(__('ui.yes_delete')),
-                        cancelButtonText: @json(__('ui.cancel'))
-                    }).then((result) => {
+                    window.Teramia.confirmDelete().then((result) => {
                         if (result.isConfirmed) {
                             form.dataset.confirmed = '1';
                             form.submit();
@@ -360,6 +466,12 @@
                 wrapper.appendChild(table);
             });
         }
+
+        document.querySelectorAll('[data-async-list][data-fragment]').forEach((el) => {
+            const fragmentSelector = el.dataset.fragment;
+            const formSelector = el.dataset.formSelector || 'form[method="GET"]';
+            window.Teramia.wireAsyncList(el, fragmentSelector, formSelector);
+        });
     });
 </script>
 </body>

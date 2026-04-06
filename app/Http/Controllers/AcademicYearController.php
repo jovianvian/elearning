@@ -50,6 +50,7 @@ class AcademicYearController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Academic year created.',
                 'data' => $academicYear,
             ]);
@@ -61,7 +62,10 @@ class AcademicYearController extends Controller
     public function edit(Request $request, AcademicYear $academicYear): View|JsonResponse
     {
         if ($request->expectsJson()) {
-            return response()->json(['data' => $academicYear]);
+            return response()->json([
+                'ok' => true,
+                'data' => $academicYear,
+            ]);
         }
 
         return view('academic-years.edit', compact('academicYear'));
@@ -79,6 +83,7 @@ class AcademicYearController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Academic year updated.',
                 'data' => $academicYear->fresh(),
             ]);
@@ -92,7 +97,10 @@ class AcademicYearController extends Controller
         $academicYear->delete();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Academic year deleted.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'Academic year deleted.',
+            ]);
         }
 
         return redirect()->route('super-admin.academic-years.index')->with('success', 'Academic year deleted.');

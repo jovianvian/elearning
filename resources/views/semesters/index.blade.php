@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => 'Semesters'])
 
 @section('content')
-<div x-data="semesterCrudPage({ years: @js($academicYears->map(fn($y) => ['id' => $y->id, 'name' => $y->name])->values()) })">
+<div x-data="semesterCrudPage({ years: @js($academicYears->map(fn($y) => ['id' => $y->id, 'name' => $y->name])->values()) })" data-async-list data-fragment="#semesters-table-fragment">
     <x-ui.page-header title="Semester Management" subtitle="Manage semester periods and active semester configuration.">
         <x-slot:actions>
             <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
@@ -32,39 +32,41 @@
         </x-slot:filters>
     </x-ui.table-toolbar>
 
-    <div class="tera-table-wrap">
-        <table class="tera-table">
-            <thead>
-            <tr>
-                <th>No</th>
-                <th>{{ __('ui.name') }}</th>
-                <th>{{ __('ui.code') }}</th>
-                <th>{{ __('ui.academic_year') }}</th>
-                <th>{{ __('ui.active') }}</th>
-                <th>{{ __('ui.action') }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach($semesters as $semester)
+    <div id="semesters-table-fragment">
+        <div class="tera-table-wrap">
+            <table class="tera-table">
+                <thead>
                 <tr>
-                    <td>{{ $semesters->firstItem() + $loop->index }}</td>
-                    <td>{{ $semester->name }}</td>
-                    <td>{{ $semester->code }}</td>
-                    <td>{{ $semester->academicYear?->name }}</td>
-                    <td><span class="tera-badge {{ $semester->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $semester->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td>
-                        <div class="inline-flex gap-2">
-                            <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $semester->id }})">{{ __('ui.edit') }}</button>
-                            <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $semester->id }}, @js($semester->name))">{{ __('ui.delete') }}</button>
-                        </div>
-                    </td>
+                    <th>No</th>
+                    <th>{{ __('ui.name') }}</th>
+                    <th>{{ __('ui.code') }}</th>
+                    <th>{{ __('ui.academic_year') }}</th>
+                    <th>{{ __('ui.active') }}</th>
+                    <th>{{ __('ui.action') }}</th>
                 </tr>
-            @endforeach
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                @foreach($semesters as $semester)
+                    <tr>
+                        <td>{{ $semesters->firstItem() + $loop->index }}</td>
+                        <td>{{ $semester->name }}</td>
+                        <td>{{ $semester->code }}</td>
+                        <td>{{ $semester->academicYear?->name }}</td>
+                        <td><span class="tera-badge {{ $semester->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $semester->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                        <td>
+                            <div class="inline-flex gap-2">
+                                <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $semester->id }})">{{ __('ui.edit') }}</button>
+                                <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $semester->id }}, @js($semester->name))">{{ __('ui.delete') }}</button>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
 
-    <div class="mt-4">{{ $semesters->links() }}</div>
+        <div class="mt-4">{{ $semesters->links() }}</div>
+    </div>
 
     <x-ui.modal name="showModal" :title="__('ui.semester_form')" maxWidth="max-w-3xl">
         <form @submit.prevent="submitForm" class="space-y-4">
@@ -159,11 +161,8 @@ function semesterCrudPage({ years }) {
             this.loading = true;
             this.errors = {};
             try {
-                const res = await fetch(`/super-admin/semesters/${id}/edit`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_load_semester')));
+                const { response, payload } = await window.Teramia.fetchJson(`/super-admin/semesters/${id}/edit`);
+                if (!response.ok || !payload?.ok) throw new Error(payload?.message || @js(__('ui.failed_to_load_semester')));
 
                 this.isEdit = true;
                 this.editId = id;
@@ -177,7 +176,7 @@ function semesterCrudPage({ years }) {
                 };
                 this.showModal = true;
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
@@ -191,19 +190,12 @@ function semesterCrudPage({ years }) {
             if (this.isEdit) body._method = 'PUT';
 
             try {
-                const res = await fetch(url, {
+                const { response, payload } = await window.Teramia.fetchJson(url, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify(body),
                 });
-                const payload = await res.json();
-                if (!res.ok) {
-                    if (res.status === 422) {
+                if (!response.ok) {
+                    if (response.status === 422) {
                         this.errors = payload.errors || {};
                         return;
                     }
@@ -211,43 +203,32 @@ function semesterCrudPage({ years }) {
                 }
 
                 this.showModal = false;
-                Swal.fire({ icon: 'success', title: @js(__('ui.success')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#semesters-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
         },
 
         async destroyItem(id, name) {
-            const confirm = await Swal.fire({
-                title: @js(__('ui.delete_semester_question')),
-                text: `Delete ${name}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                confirmButtonText: @js(__('ui.delete')),
-            });
+            const confirm = await window.Teramia.confirmDelete(
+                @js(__('ui.delete_semester_question')),
+                `Delete ${name}?`
+            );
             if (!confirm.isConfirmed) return;
 
             try {
-                const res = await fetch(`/super-admin/semesters/${id}`, {
+                const { response, payload } = await window.Teramia.fetchJson(`/super-admin/semesters/${id}`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify({ _method: 'DELETE' }),
                 });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_semester')));
-                Swal.fire({ icon: 'success', title: @js(__('ui.deleted')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                if (!response.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_semester')));
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#semesters-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             }
         },
     };

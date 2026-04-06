@@ -13,6 +13,7 @@ use App\Models\Subject;
 use App\Models\SubjectTeacher;
 use App\Models\User;
 use App\Services\CourseEnrollmentService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -166,11 +167,18 @@ class CourseController extends Controller
         return redirect()->route('courses.index')->with('success', 'Course updated and students synchronized.');
     }
 
-    public function destroy(Course $course): RedirectResponse
+    public function destroy(Request $request, Course $course): RedirectResponse|JsonResponse
     {
         $this->authorizeCourseManage();
 
         $course->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Course moved to trash.',
+            ]);
+        }
 
         return redirect()->route('courses.index')->with('success', 'Course moved to trash.');
     }

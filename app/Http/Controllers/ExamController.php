@@ -16,6 +16,7 @@ use App\Models\Subject;
 use App\Services\ExamAccessService;
 use App\Services\ExamEngineService;
 use App\Services\QuestionAccessService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,8 +121,9 @@ class ExamController extends Controller
         $questions = Question::query()->whereIn('id', $questionIds)->get()->keyBy('id');
         $this->validateQuestionSubjectAlignment($course, $questionIds, $questions->all());
         $this->validateSelectedBankAlignment($selectedBankId, $questions->all());
+        $pointMap = $this->buildQuestionPointMap($data, $questionIds, $questions);
 
-        $exam = DB::transaction(function () use ($data, $course, $questionIds, $questions): Exam {
+        $exam = DB::transaction(function () use ($data, $course, $questionIds, $questions, $pointMap): Exam {
             $exam = Exam::create([
                 'course_id' => $course->id,
                 'title' => $data['title'],
@@ -138,6 +140,9 @@ class ExamController extends Controller
                 'show_answer_key' => (bool) ($data['show_answer_key'] ?? false),
                 'show_explanation' => (bool) ($data['show_explanation'] ?? false),
                 'max_attempts' => (int) ($data['max_attempts'] ?? 1),
+                'target_score' => (float) ($data['target_score'] ?? 100),
+                'objective_weight_percent' => (float) ($data['objective_weight_percent'] ?? 60),
+                'essay_weight_percent' => (float) ($data['essay_weight_percent'] ?? 40),
                 'status' => $data['status'],
                 'is_published' => (bool) ($data['is_published'] ?? false),
             ]);
@@ -153,7 +158,7 @@ class ExamController extends Controller
                     'exam_id' => $exam->id,
                     'question_id' => $questionId,
                     'question_order' => $order++,
-                    'points' => $question->points,
+                    'points' => $pointMap[$questionId] ?? (float) $question->points,
                 ]);
             }
             return $exam;
@@ -213,8 +218,9 @@ class ExamController extends Controller
         $questions = Question::query()->whereIn('id', $questionIds)->get()->keyBy('id');
         $this->validateQuestionSubjectAlignment($course, $questionIds, $questions->all());
         $this->validateSelectedBankAlignment($selectedBankId, $questions->all());
+        $pointMap = $this->buildQuestionPointMap($data, $questionIds, $questions);
 
-        DB::transaction(function () use ($exam, $data, $course, $questionIds, $questions): void {
+        DB::transaction(function () use ($exam, $data, $course, $questionIds, $questions, $pointMap): void {
             $exam->update([
                 'course_id' => $course->id,
                 'title' => $data['title'],
@@ -230,6 +236,9 @@ class ExamController extends Controller
                 'show_answer_key' => (bool) ($data['show_answer_key'] ?? false),
                 'show_explanation' => (bool) ($data['show_explanation'] ?? false),
                 'max_attempts' => (int) ($data['max_attempts'] ?? 1),
+                'target_score' => (float) ($data['target_score'] ?? 100),
+                'objective_weight_percent' => (float) ($data['objective_weight_percent'] ?? 60),
+                'essay_weight_percent' => (float) ($data['essay_weight_percent'] ?? 40),
                 'status' => $data['status'],
                 'is_published' => (bool) ($data['is_published'] ?? false),
             ]);
@@ -246,7 +255,7 @@ class ExamController extends Controller
                     'exam_id' => $exam->id,
                     'question_id' => $questionId,
                     'question_order' => $order++,
-                    'points' => $question->points,
+                    'points' => $pointMap[$questionId] ?? (float) $question->points,
                 ]);
             }
         });
@@ -259,19 +268,33 @@ class ExamController extends Controller
         return redirect()->route('exams.show', $exam)->with('success', 'Exam updated.');
     }
 
-    public function destroy(Exam $exam): RedirectResponse
+    public function destroy(Request $request, Exam $exam): RedirectResponse|JsonResponse
     {
         abort_unless($this->accessService->canManageExam(auth()->user(), $exam), 403);
         $exam->delete();
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Exam moved to trash.',
+            ]);
+        }
+
         return redirect()->route('exams.index')->with('success', 'Exam moved to trash.');
     }
 
-    public function publishResults(PublishExamResultRequest $request, Exam $exam): RedirectResponse
+    public function publishResults(PublishExamResultRequest $request, Exam $exam): RedirectResponse|JsonResponse
     {
         abort_unless($this->accessService->canManageExam(auth()->user(), $exam), 403);
 
         $this->engineService->publishResults($exam, auth()->user(), $request->validated('note'));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Exam results published to students.',
+            ]);
+        }
 
         return back()->with('success', 'Exam results published to students.');
     }
@@ -347,5 +370,110 @@ class ExamController extends Controller
         return $this->questionAccessService
             ->scopeAccessibleBanks($query, auth()->user())
             ->get();
+    }
+
+    /**
+     * @param  array<int, int>  $questionIds
+     * @param  \Illuminate\Support\Collection<int, \App\Models\Question>  $questions
+     * @return array<int, float>
+     */
+    private function buildQuestionPointMap(array $data, array $questionIds, $questions): array
+    {
+        $scoringMode = (string) ($data['scoring_mode'] ?? 'auto');
+        if ($scoringMode === 'manual') {
+            $manualPoints = $data['question_points'] ?? [];
+            $map = [];
+            foreach ($questionIds as $questionId) {
+                $point = $manualPoints[$questionId] ?? $manualPoints[(string) $questionId] ?? null;
+                if ($point !== null && $point !== '' && is_numeric($point)) {
+                    $map[$questionId] = max(0.1, round((float) $point, 2));
+                }
+            }
+            if ($map !== []) {
+                return $map;
+            }
+        }
+
+        $examType = (string) ($data['exam_type'] ?? 'mixed');
+        $targetScore = max(1.0, (float) ($data['target_score'] ?? 100));
+        $objectiveWeight = max(0.0, min(100.0, (float) ($data['objective_weight_percent'] ?? 60)));
+        $essayWeight = max(0.0, min(100.0, (float) ($data['essay_weight_percent'] ?? 40)));
+
+        $objectiveIds = [];
+        $essayIds = [];
+        foreach ($questionIds as $questionId) {
+            $question = $questions->get($questionId);
+            if (! $question) {
+                continue;
+            }
+
+            if ($question->type === Question::TYPE_ESSAY) {
+                $essayIds[] = $questionId;
+            } else {
+                $objectiveIds[] = $questionId;
+            }
+        }
+
+        if ($examType === 'objective') {
+            $objectiveWeight = 100.0;
+            $essayWeight = 0.0;
+        } elseif ($examType === 'essay') {
+            $objectiveWeight = 0.0;
+            $essayWeight = 100.0;
+        } else {
+            if (count($objectiveIds) === 0) {
+                $objectiveWeight = 0.0;
+                $essayWeight = 100.0;
+            } elseif (count($essayIds) === 0) {
+                $objectiveWeight = 100.0;
+                $essayWeight = 0.0;
+            }
+        }
+
+        $objectiveTotal = round($targetScore * ($objectiveWeight / 100), 2);
+        $essayTotal = round($targetScore * ($essayWeight / 100), 2);
+        $totalAllocated = round($objectiveTotal + $essayTotal, 2);
+        if ($totalAllocated !== round($targetScore, 2)) {
+            $objectiveTotal = round($objectiveTotal + ($targetScore - $totalAllocated), 2);
+        }
+
+        $pointMap = [];
+        $objectivePoints = $this->distributeEqualPoints($objectiveIds, $objectiveTotal);
+        foreach ($objectivePoints as $questionId => $points) {
+            $pointMap[$questionId] = $points;
+        }
+        $essayPoints = $this->distributeEqualPoints($essayIds, $essayTotal);
+        foreach ($essayPoints as $questionId => $points) {
+            $pointMap[$questionId] = $points;
+        }
+
+        return $pointMap;
+    }
+
+    /**
+     * @param  array<int, int>  $questionIds
+     * @return array<int, float>
+     */
+    private function distributeEqualPoints(array $questionIds, float $total): array
+    {
+        $count = count($questionIds);
+        if ($count === 0) {
+            return [];
+        }
+
+        $base = floor(($total / $count) * 100) / 100;
+        $points = array_fill(0, $count, $base);
+        $current = round(array_sum($points), 2);
+        $delta = round($total - $current, 2);
+        if ($delta !== 0.0) {
+            $points[$count - 1] = round($points[$count - 1] + $delta, 2);
+        }
+
+        $map = [];
+        foreach ($questionIds as $idx => $questionId) {
+            $map[$questionId] = max(0.0, round((float) $points[$idx], 2));
+        }
+
+        return $map;
     }
 }

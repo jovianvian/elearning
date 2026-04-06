@@ -44,6 +44,7 @@ class SubjectController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Subject created.',
                 'data' => $subject,
             ]);
@@ -55,7 +56,10 @@ class SubjectController extends Controller
     public function edit(Request $request, Subject $subject): View|JsonResponse
     {
         if ($request->expectsJson()) {
-            return response()->json(['data' => $subject]);
+            return response()->json([
+                'ok' => true,
+                'data' => $subject,
+            ]);
         }
 
         return view('subjects.edit', compact('subject'));
@@ -67,6 +71,7 @@ class SubjectController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Subject updated.',
                 'data' => $subject->fresh(),
             ]);
@@ -80,7 +85,10 @@ class SubjectController extends Controller
         $subject->delete();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Subject moved to trash.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'Subject moved to trash.',
+            ]);
         }
 
         return redirect()->route('subjects.index')->with('success', 'Subject moved to trash.');

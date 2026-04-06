@@ -73,6 +73,7 @@ class UserController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'User created.',
                 'data' => $user->load(['role', 'schoolClass']),
             ]);
@@ -85,6 +86,7 @@ class UserController extends Controller
     {
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'data' => [
                     'id' => $user->id,
                     'role_id' => $user->role_id,
@@ -131,6 +133,7 @@ class UserController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'User updated.',
                 'data' => $user->fresh()->load(['role', 'schoolClass']),
             ]);
@@ -144,6 +147,7 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             if ($request->expectsJson()) {
                 return response()->json([
+                    'ok' => false,
                     'message' => 'Cannot delete current logged in account.',
                 ], 422);
             }
@@ -154,7 +158,10 @@ class UserController extends Controller
         $user->delete();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'User moved to trash.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'User moved to trash.',
+            ]);
         }
 
         return redirect()->route('users.index')->with('success', 'User moved to trash.');

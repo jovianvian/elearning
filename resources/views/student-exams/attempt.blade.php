@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => 'Exam Attempt'])
+@extends('layouts.app', ['title' => __('ui.exam_attempt')])
 
 @section('content')
     <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
@@ -8,7 +8,7 @@
                 <p class="text-xs text-slate-500 mt-1">{{ $attempt->exam->course?->title }}</p>
             </div>
             <div class="px-3 py-2 rounded-lg bg-yellowx/20 text-amber-700 text-sm font-semibold">
-                Time Left: <span id="countdown">--:--</span>
+                {{ __('ui.time_left') }}: <span id="countdown">--:--</span>
             </div>
         </div>
     </div>
@@ -40,7 +40,7 @@
                             name="answers[{{ $question->id }}][answer_text]"
                             rows="{{ $question?->type === 'essay' ? 5 : 2 }}"
                             class="w-full rounded-lg border-slate-300"
-                            placeholder="Type your answer..."
+                            placeholder="{{ __('ui.type_your_answer') }}"
                         >{{ $answer->answer_text }}</textarea>
                     </div>
                 @endif
@@ -48,8 +48,8 @@
         @endforeach
 
         <div class="flex flex-col sm:flex-row gap-2">
-            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm w-full sm:w-auto">Submit Exam</button>
-            <button type="button" id="save-btn" class="px-4 py-2 border rounded-lg text-sm w-full sm:w-auto">Save Draft</button>
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm w-full sm:w-auto">{{ __('ui.submit_exam') }}</button>
+            <button type="button" id="save-btn" class="px-4 py-2 border rounded-lg text-sm w-full sm:w-auto">{{ __('ui.save_draft') }}</button>
         </div>
     </form>
 

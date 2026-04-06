@@ -1,25 +1,25 @@
-@extends('layouts.app', ['title' => 'Suspicious Logs'])
+@extends('layouts.app', ['title' => __('ui.suspicious_logs')])
 
 @section('content')
-    <x-ui.page-header title="Suspicious Activity Logs" subtitle="Monitor flagged exam behavior, session anomalies, and related activity." />
+    <x-ui.page-header :title="__('ui.suspicious_activity_logs_title')" :subtitle="__('ui.suspicious_activity_logs_subtitle')" />
 
-    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search activity, student, or note">
+    <x-ui.table-toolbar :search-value="request('q')" :search-placeholder="__('ui.search_activity_student_note')">
         <x-slot:filters>
             <div>
-                <label class="tera-label">Activity Type</label>
+                <label class="tera-label">{{ __('ui.activity_type') }}</label>
                 <select name="activity_type" class="tera-select">
-                    <option value="">All</option>
+                    <option value="">{{ __('ui.all') }}</option>
                     @foreach($activityTypes as $activityType)
                         <option value="{{ $activityType }}" @selected(request('activity_type') === $activityType)>{{ $activityType }}</option>
                     @endforeach
                 </select>
             </div>
             <div>
-                <label class="tera-label">Severity</label>
+                <label class="tera-label">{{ __('ui.severity') }}</label>
                 <select name="severity" class="tera-select">
-                    <option value="">All</option>
+                    <option value="">{{ __('ui.all') }}</option>
                     @foreach(['low','medium','high'] as $severity)
-                        <option value="{{ $severity }}" @selected(request('severity') === $severity)>{{ ucfirst($severity) }}</option>
+                        <option value="{{ $severity }}" @selected(request('severity') === $severity)>{{ __('ui.severity_'.$severity) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -30,13 +30,13 @@
         <table class="tera-table">
             <thead>
                 <tr>
-                    <th>No</th>
-                    <th>Time</th>
-                    <th>Student</th>
-                    <th>Exam</th>
-                    <th>Activity</th>
-                    <th>Severity</th>
-                    <th>Note</th>
+                    <th>{{ __('ui.no') }}</th>
+                    <th>{{ __('ui.time') }}</th>
+                    <th>{{ __('ui.student') }}</th>
+                    <th>{{ __('ui.exams') }}</th>
+                    <th>{{ __('ui.activity') }}</th>
+                    <th>{{ __('ui.severity') }}</th>
+                    <th>{{ __('ui.note') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,13 +49,13 @@
                         <td>{{ $log->activity_type }}</td>
                         <td>
                             <span class="tera-badge {{ $log->severity === 'high' ? 'bg-red-100 text-red-700' : ($log->severity === 'medium' ? 'bg-yellow-100 text-amber-700' : 'bg-slate-100 text-slate-700') }}">
-                                {{ $log->severity }}
+                                {{ __('ui.severity_'.$log->severity) }}
                             </span>
                         </td>
                         <td class="text-xs">{{ $log->note }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="py-6 text-center text-slate-500">No suspicious activity logs.</td></tr>
+                    <tr><td colspan="7" class="py-6 text-center text-slate-500">{{ __('ui.no_suspicious_logs') }}</td></tr>
                 @endforelse
             </tbody>
         </table>

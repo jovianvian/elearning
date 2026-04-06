@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => 'Subjects'])
 
 @section('content')
-<div x-data="subjectCrudPage()">
+<div x-data="subjectCrudPage()" data-async-list data-fragment="#subjects-table-fragment">
     <x-ui.page-header title="Subject Management" subtitle="Manage bilingual subject data for the school academic structure.">
         <x-slot:actions>
             <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
@@ -23,39 +23,41 @@
         </x-slot:filters>
     </x-ui.table-toolbar>
 
-    <div class="tera-table-wrap">
-        <table class="tera-table">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>{{ __('ui.subject_name_id') }}</th>
-                    <th>{{ __('ui.subject_name_en') }}</th>
-                    <th>{{ __('ui.code') }}</th>
-                    <th>{{ __('ui.active') }}</th>
-                    <th>{{ __('ui.action') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach($subjects as $subject)
-                <tr>
-                    <td>{{ $subjects->firstItem() + $loop->index }}</td>
-                    <td class="font-semibold">{{ $subject->name_id }}</td>
-                    <td>{{ $subject->name_en ?: '-' }}</td>
-                    <td>{{ $subject->code }}</td>
-                    <td><span class="tera-badge {{ $subject->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $subject->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td>
-                        <div class="inline-flex items-center gap-2">
-                            <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $subject->id }})">{{ __('ui.edit') }}</button>
-                            <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $subject->id }}, @js($subject->name_id))">{{ __('ui.delete') }}</button>
-                        </div>
-                    </td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    </div>
+    <div id="subjects-table-fragment">
+        <div class="tera-table-wrap">
+            <table class="tera-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>{{ __('ui.subject_name_id') }}</th>
+                        <th>{{ __('ui.subject_name_en') }}</th>
+                        <th>{{ __('ui.code') }}</th>
+                        <th>{{ __('ui.active') }}</th>
+                        <th>{{ __('ui.action') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($subjects as $subject)
+                    <tr>
+                        <td>{{ $subjects->firstItem() + $loop->index }}</td>
+                        <td class="font-semibold">{{ $subject->name_id }}</td>
+                        <td>{{ $subject->name_en ?: '-' }}</td>
+                        <td>{{ $subject->code }}</td>
+                        <td><span class="tera-badge {{ $subject->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $subject->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                        <td>
+                            <div class="inline-flex items-center gap-2">
+                                <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $subject->id }})">{{ __('ui.edit') }}</button>
+                                <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $subject->id }}, @js($subject->name_id))">{{ __('ui.delete') }}</button>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
 
-    <div class="mt-4">{{ $subjects->links() }}</div>
+        <div class="mt-4">{{ $subjects->links() }}</div>
+    </div>
 
     <x-ui.modal name="showModal" :title="__('ui.subject_form')" maxWidth="max-w-3xl">
         <form @submit.prevent="submitForm" class="space-y-4">
@@ -132,11 +134,8 @@ function subjectCrudPage() {
             this.loading = true;
             this.errors = {};
             try {
-                const res = await fetch(`/subjects/${id}/edit`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_load_subject')));
+                const { response, payload } = await window.Teramia.fetchJson(`/subjects/${id}/edit`);
+                if (!response.ok || !payload?.ok) throw new Error(payload?.message || @js(__('ui.failed_to_load_subject')));
 
                 this.isEdit = true;
                 this.editId = id;
@@ -149,7 +148,7 @@ function subjectCrudPage() {
                 };
                 this.showModal = true;
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
@@ -163,19 +162,12 @@ function subjectCrudPage() {
             if (this.isEdit) body._method = 'PUT';
 
             try {
-                const res = await fetch(url, {
+                const { response, payload } = await window.Teramia.fetchJson(url, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify(body),
                 });
-                const payload = await res.json();
-                if (!res.ok) {
-                    if (res.status === 422) {
+                if (!response.ok) {
+                    if (response.status === 422) {
                         this.errors = payload.errors || {};
                         return;
                     }
@@ -183,46 +175,36 @@ function subjectCrudPage() {
                 }
 
                 this.showModal = false;
-                Swal.fire({ icon: 'success', title: @js(__('ui.success')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#subjects-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
         },
 
         async destroyItem(id, name) {
-            const confirm = await Swal.fire({
-                title: @js(__('ui.delete_subject_question')),
-                text: `Delete ${name}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                confirmButtonText: @js(__('ui.delete')),
-            });
+            const confirm = await window.Teramia.confirmDelete(
+                @js(__('ui.delete_subject_question')),
+                `Delete ${name}?`
+            );
             if (!confirm.isConfirmed) return;
 
             try {
-                const res = await fetch(`/subjects/${id}`, {
+                const { response, payload } = await window.Teramia.fetchJson(`/subjects/${id}`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify({ _method: 'DELETE' }),
                 });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_subject')));
-                Swal.fire({ icon: 'success', title: @js(__('ui.deleted')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                if (!response.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_subject')));
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#subjects-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             }
         },
     };
 }
 </script>
 @endsection
+

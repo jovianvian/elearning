@@ -55,6 +55,7 @@ class SchoolClassController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Class created.',
                 'data' => $schoolClass->load(['academicYear', 'homeroomTeacher']),
             ]);
@@ -67,6 +68,7 @@ class SchoolClassController extends Controller
     {
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'data' => [
                     'id' => $schoolClass->id,
                     'name' => $schoolClass->name,
@@ -91,6 +93,7 @@ class SchoolClassController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Class updated.',
                 'data' => $schoolClass->fresh()->load(['academicYear', 'homeroomTeacher']),
             ]);
@@ -104,7 +107,10 @@ class SchoolClassController extends Controller
         $schoolClass->delete();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Class moved to trash.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'Class moved to trash.',
+            ]);
         }
 
         return redirect()->route('classes.index')->with('success', 'Class moved to trash.');

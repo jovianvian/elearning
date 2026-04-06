@@ -21,7 +21,8 @@ class Exam extends Model
     protected $fillable = [
         'course_id', 'title', 'description', 'created_by', 'exam_type', 'start_at', 'end_at', 'duration_minutes',
         'shuffle_questions', 'shuffle_options', 'auto_submit', 'show_result_after_submit', 'show_answer_key',
-        'show_explanation', 'max_attempts', 'status', 'is_published',
+        'show_explanation', 'max_attempts', 'target_score', 'objective_weight_percent', 'essay_weight_percent',
+        'status', 'is_published',
     ];
 
     protected function casts(): array
@@ -36,6 +37,9 @@ class Exam extends Model
             'show_answer_key' => 'boolean',
             'show_explanation' => 'boolean',
             'is_published' => 'boolean',
+            'target_score' => 'decimal:2',
+            'objective_weight_percent' => 'decimal:2',
+            'essay_weight_percent' => 'decimal:2',
         ];
     }
 

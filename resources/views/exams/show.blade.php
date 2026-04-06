@@ -30,6 +30,9 @@
             <span class="px-2 py-1 rounded bg-slate-100">Shuffle Opt: {{ $exam->shuffle_options ? 'Yes' : 'No' }}</span>
             <span class="px-2 py-1 rounded bg-slate-100">Auto Submit: {{ $exam->auto_submit ? 'Yes' : 'No' }}</span>
             <span class="px-2 py-1 rounded bg-slate-100">Max Attempts: {{ $exam->max_attempts }}</span>
+            <span class="px-2 py-1 rounded bg-slate-100">Target: {{ $exam->target_score ?? 100 }}</span>
+            <span class="px-2 py-1 rounded bg-slate-100">Objective: {{ $exam->objective_weight_percent ?? 60 }}%</span>
+            <span class="px-2 py-1 rounded bg-slate-100">Essay: {{ $exam->essay_weight_percent ?? 40 }}%</span>
             <span class="px-2 py-1 rounded bg-slate-100">Published: {{ $exam->is_published ? 'Yes' : 'No' }}</span>
         </div>
     </div>

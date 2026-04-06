@@ -53,58 +53,58 @@
         $sections = [
             [
                 'key' => 'dashboard',
-                'label' => 'Dashboard',
+                'label' => __('ui.dashboard'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.super-admin', ['dashboard.super-admin']),
+                    $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.super-admin', ['dashboard.super-admin']),
                 ],
             ],
             [
                 'key' => 'academic',
-                'label' => 'Academic',
+                'label' => __('ui.academic_section'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Users', 'users', 'users.index', ['users.*']),
-                    $makeLeaf('Classes', 'school', 'classes.index', ['classes.*']),
-                    $makeLeaf('Subjects', 'book-open', 'subjects.index', ['subjects.*']),
-                    $makeTree('Assignments', 'git-branch-plus', [
-                        $makeLeaf('Class Student Assignments', 'user-check', 'assignments.class-students.index', ['assignments.class-students.*']),
-                        $makeLeaf('Subject Teacher Assignments', 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
+                    $makeLeaf(__('ui.users'), 'users', 'users.index', ['users.*']),
+                    $makeLeaf(__('ui.classes'), 'school', 'classes.index', ['classes.*']),
+                    $makeLeaf(__('ui.subjects'), 'book-open', 'subjects.index', ['subjects.*']),
+                    $makeTree(__('ui.assignments'), 'git-branch-plus', [
+                        $makeLeaf(__('ui.class_student_assignments'), 'user-check', 'assignments.class-students.index', ['assignments.class-students.*']),
+                        $makeLeaf(__('ui.subject_teacher_assignments'), 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
                     ]),
-                    $makeLeaf('Courses', 'folders', 'courses.index', ['courses.*', 'my-courses.*']),
+                    $makeLeaf(__('ui.courses'), 'folders', 'courses.index', ['courses.*', 'my-courses.*']),
                 ],
             ],
             [
                 'key' => 'assessment',
-                'label' => 'Assessment',
+                'label' => __('ui.assessment_section'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Question Banks', 'library-big', 'question-banks.index', ['question-banks.*']),
-                    $makeLeaf('Question Imports', 'file-up', 'question-imports.index', ['question-imports.*']),
-                    $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*', 'student-exams.*']),
-                    $makeLeaf('Grading', 'check-check', 'exam-grading.index', ['exam-grading.*']),
+                    $makeLeaf(__('ui.question_banks'), 'library-big', 'question-banks.index', ['question-banks.*']),
+                    $makeLeaf(__('ui.question_imports'), 'file-up', 'question-imports.index', ['question-imports.*']),
+                    $makeLeaf(__('ui.exams'), 'notepad-text', 'exams.index', ['exams.*', 'student-exams.*']),
+                    $makeLeaf(__('ui.grading'), 'check-check', 'exam-grading.index', ['exam-grading.*']),
                 ],
             ],
             [
                 'key' => 'monitoring',
-                'label' => 'Monitoring & Reports',
+                'label' => __('ui.monitoring_reports_section'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
-                    $makeLeaf('Suspicious Logs', 'shield-alert', 'suspicious-activities.index', ['suspicious-activities.*']),
-                    $makeLeaf('Audit Logs', 'scroll-text', 'super-admin.audit-logs.index', ['super-admin.audit-logs.*']),
-                    $makeLeaf('Login Logs', 'fingerprint', 'super-admin.login-logs.index', ['super-admin.login-logs.*']),
+                    $makeLeaf(__('ui.reports'), 'bar-chart-3', 'reports.index', ['reports.*']),
+                    $makeLeaf(__('ui.suspicious_logs'), 'shield-alert', 'suspicious-activities.index', ['suspicious-activities.*']),
+                    $makeLeaf(__('ui.audit_logs'), 'scroll-text', 'super-admin.audit-logs.index', ['super-admin.audit-logs.*']),
+                    $makeLeaf(__('ui.login_logs'), 'fingerprint', 'super-admin.login-logs.index', ['super-admin.login-logs.*']),
                 ],
             ],
             [
                 'key' => 'system',
-                'label' => 'System',
+                'label' => __('ui.system_section'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Restore Center', 'rotate-ccw', 'super-admin.restore-center.index', ['super-admin.restore-center.*']),
-                    $makeLeaf('Academic Years', 'calendar-days', 'super-admin.academic-years.index', ['super-admin.academic-years.*']),
-                    $makeLeaf('Semesters', 'calendar-range', 'super-admin.semesters.index', ['super-admin.semesters.*']),
-                    $makeLeaf('Settings', 'settings-2', 'super-admin.settings.edit', ['super-admin.settings.*']),
+                    $makeLeaf(__('ui.restore_center'), 'rotate-ccw', 'super-admin.restore-center.index', ['super-admin.restore-center.*']),
+                    $makeLeaf(__('ui.academic_years'), 'calendar-days', 'super-admin.academic-years.index', ['super-admin.academic-years.*']),
+                    $makeLeaf(__('ui.semesters'), 'calendar-range', 'super-admin.semesters.index', ['super-admin.semesters.*']),
+                    $makeLeaf(__('ui.settings'), 'settings-2', 'super-admin.settings.edit', ['super-admin.settings.*']),
                 ],
             ],
         ];
@@ -112,85 +112,85 @@
         $sections = [
             [
                 'key' => 'dashboard',
-                'label' => 'Dashboard',
+                'label' => __('ui.dashboard'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.admin', ['dashboard.admin']),
+                    $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.admin', ['dashboard.admin']),
                 ],
             ],
             [
                 'key' => 'academic',
-                'label' => 'Academic',
+                'label' => __('ui.academic_section'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Users', 'users', 'users.index', ['users.*']),
-                    $makeLeaf('Classes', 'school', 'classes.index', ['classes.*']),
-                    $makeLeaf('Subjects', 'book-open', 'subjects.index', ['subjects.*']),
-                    $makeTree('Assignments', 'git-branch-plus', [
-                        $makeLeaf('Class Student Assignments', 'user-check', 'assignments.class-students.index', ['assignments.class-students.*']),
-                        $makeLeaf('Subject Teacher Assignments', 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
+                    $makeLeaf(__('ui.users'), 'users', 'users.index', ['users.*']),
+                    $makeLeaf(__('ui.classes'), 'school', 'classes.index', ['classes.*']),
+                    $makeLeaf(__('ui.subjects'), 'book-open', 'subjects.index', ['subjects.*']),
+                    $makeTree(__('ui.assignments'), 'git-branch-plus', [
+                        $makeLeaf(__('ui.class_student_assignments'), 'user-check', 'assignments.class-students.index', ['assignments.class-students.*']),
+                        $makeLeaf(__('ui.subject_teacher_assignments'), 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
                     ]),
-                    $makeLeaf('Courses', 'folders', 'courses.index', ['courses.*']),
+                    $makeLeaf(__('ui.courses'), 'folders', 'courses.index', ['courses.*']),
                 ],
             ],
             [
                 'key' => 'assessment',
-                'label' => 'Assessment',
+                'label' => __('ui.assessment_section'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Question Banks', 'library-big', 'question-banks.index', ['question-banks.*']),
-                    $makeLeaf('Question Imports', 'file-up', 'question-imports.index', ['question-imports.*']),
-                    $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*']),
-                    $makeLeaf('Grading', 'check-check', 'exam-grading.index', ['exam-grading.*']),
+                    $makeLeaf(__('ui.question_banks'), 'library-big', 'question-banks.index', ['question-banks.*']),
+                    $makeLeaf(__('ui.question_imports'), 'file-up', 'question-imports.index', ['question-imports.*']),
+                    $makeLeaf(__('ui.exams'), 'notepad-text', 'exams.index', ['exams.*']),
+                    $makeLeaf(__('ui.grading'), 'check-check', 'exam-grading.index', ['exam-grading.*']),
                 ],
             ],
             [
                 'key' => 'monitoring',
-                'label' => 'Monitoring & Reports',
+                'label' => __('ui.monitoring_reports_section'),
                 'active' => false,
                 'items' => [
-                    $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
+                    $makeLeaf(__('ui.reports'), 'bar-chart-3', 'reports.index', ['reports.*']),
                 ],
             ],
         ];
     } elseif ($role === 'principal') {
         $sections = [[
             'key' => 'dashboard',
-            'label' => 'Dashboard',
+            'label' => __('ui.dashboard'),
             'active' => false,
             'items' => [
-                $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.principal', ['dashboard.principal']),
-                $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*']),
-                $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
+                $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.principal', ['dashboard.principal']),
+                $makeLeaf(__('ui.exams'), 'notepad-text', 'exams.index', ['exams.*']),
+                $makeLeaf(__('ui.reports'), 'bar-chart-3', 'reports.index', ['reports.*']),
             ],
         ]];
     } elseif ($role === 'teacher') {
         $sections = [[
             'key' => 'teacher-menu',
-            'label' => 'Teacher Menu',
+            'label' => __('ui.teacher_menu'),
             'active' => false,
             'items' => [
-                $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.teacher', ['dashboard.teacher']),
-                $makeLeaf('My Courses', 'folders', 'my-courses.index', ['my-courses.*']),
-                $makeLeaf('Question Banks', 'library-big', 'question-banks.index', ['question-banks.*']),
-                $makeLeaf('Question Imports', 'file-up', 'question-imports.index', ['question-imports.*']),
-                $makeLeaf('Exams', 'notepad-text', 'exams.index', ['exams.*']),
-                $makeLeaf('Grading', 'check-check', 'exam-grading.index', ['exam-grading.*']),
-                $makeLeaf('Suspicious Logs', 'shield-alert', 'suspicious-activities.index', ['suspicious-activities.*']),
-                $makeLeaf('Reports', 'bar-chart-3', 'reports.index', ['reports.*']),
-                $makeLeaf('Notifications', 'bell', 'notifications.index', ['notifications.*']),
+                $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.teacher', ['dashboard.teacher']),
+                $makeLeaf(__('ui.my_courses'), 'folders', 'my-courses.index', ['my-courses.*']),
+                $makeLeaf(__('ui.question_banks'), 'library-big', 'question-banks.index', ['question-banks.*']),
+                $makeLeaf(__('ui.question_imports'), 'file-up', 'question-imports.index', ['question-imports.*']),
+                $makeLeaf(__('ui.exams'), 'notepad-text', 'exams.index', ['exams.*']),
+                $makeLeaf(__('ui.grading'), 'check-check', 'exam-grading.index', ['exam-grading.*']),
+                $makeLeaf(__('ui.suspicious_logs'), 'shield-alert', 'suspicious-activities.index', ['suspicious-activities.*']),
+                $makeLeaf(__('ui.reports'), 'bar-chart-3', 'reports.index', ['reports.*']),
+                $makeLeaf(__('ui.notifications'), 'bell', 'notifications.index', ['notifications.*']),
             ],
         ]];
     } elseif ($role === 'student') {
         $sections = [[
             'key' => 'student-menu',
-            'label' => 'Student Menu',
+            'label' => __('ui.student_menu'),
             'active' => false,
             'items' => [
-                $makeLeaf('Dashboard', 'layout-dashboard', 'dashboard.student', ['dashboard.student']),
-                $makeLeaf('My Courses', 'folders', 'my-courses.index', ['my-courses.*']),
-                $makeLeaf('My Exams', 'notepad-text', 'student-exams.index', ['student-exams.*']),
-                $makeLeaf('Notifications', 'bell', 'notifications.index', ['notifications.*']),
+                $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.student', ['dashboard.student']),
+                $makeLeaf(__('ui.my_courses'), 'folders', 'my-courses.index', ['my-courses.*']),
+                $makeLeaf(__('ui.my_exams'), 'notepad-text', 'student-exams.index', ['student-exams.*']),
+                $makeLeaf(__('ui.notifications'), 'bell', 'notifications.index', ['notifications.*']),
             ],
         ]];
     }
@@ -322,3 +322,4 @@
         </div>
     </div>
 </aside>
+

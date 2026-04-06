@@ -17,8 +17,7 @@ class StoreQuestionImportRequest extends FormRequest
         return [
             'question_bank_id' => ['required', 'integer', Rule::exists('question_banks', 'id')],
             'import_type' => ['required', Rule::in(['aiken', 'csv'])],
-            'file' => ['required', 'file', 'mimes:txt,csv', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:txt,csv,xlsx', 'max:10240'],
         ];
     }
 }
-

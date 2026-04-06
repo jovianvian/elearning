@@ -9,6 +9,7 @@ use App\Models\ClassStudent;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -98,9 +99,16 @@ class ClassStudentAssignmentController extends Controller
         return redirect()->route('assignments.class-students.index')->with('success', 'Student class assignment updated.');
     }
 
-    public function destroy(ClassStudent $class_student): RedirectResponse
+    public function destroy(Request $request, ClassStudent $class_student): RedirectResponse|JsonResponse
     {
         $class_student->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Student class assignment deleted.',
+            ]);
+        }
 
         return redirect()->route('assignments.class-students.index')->with('success', 'Student class assignment deleted.');
     }

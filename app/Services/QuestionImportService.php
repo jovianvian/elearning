@@ -7,6 +7,7 @@ use App\Models\QuestionBank;
 use App\Models\QuestionImportLog;
 use App\Models\QuestionOption;
 use App\Models\User;
+use App\Support\SimpleXlsxReader;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -14,6 +15,11 @@ use Throwable;
 
 class QuestionImportService
 {
+    public function __construct(
+        private readonly SimpleXlsxReader $xlsxReader
+    ) {
+    }
+
     public function importAiken(User $actor, QuestionBank $bank, UploadedFile $file): QuestionImportLog
     {
         $content = trim((string) file_get_contents($file->getRealPath()));
@@ -63,7 +69,7 @@ class QuestionImportService
 
     public function importCsv(User $actor, QuestionBank $bank, UploadedFile $file): QuestionImportLog
     {
-        $rows = $this->readCsvRows($file);
+        $rows = $this->readTabularRows($file);
         $errors = [];
         $successCount = 0;
 
@@ -174,6 +180,16 @@ class QuestionImportService
         }
     }
 
+    private function readTabularRows(UploadedFile $file): array
+    {
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        if ($extension === 'xlsx') {
+            return $this->readXlsxRows($file);
+        }
+
+        return $this->readCsvRows($file);
+    }
+
     private function readCsvRows(UploadedFile $file): array
     {
         $handle = fopen($file->getRealPath(), 'rb');
@@ -214,6 +230,56 @@ class QuestionImportService
         fclose($handle);
 
         return $rows;
+    }
+
+    private function readXlsxRows(UploadedFile $file): array
+    {
+        $rows = $this->xlsxReader->readFirstSheetRows($file->getRealPath());
+        if (count($rows) === 0) {
+            throw new RuntimeException('XLSX sheet is empty.');
+        }
+
+        $firstRow = $rows[0];
+        ksort($firstRow);
+        $headerColumns = [];
+        foreach ($firstRow as $columnIndex => $label) {
+            $normalized = strtolower(trim((string) $label));
+            if ($normalized === '') {
+                continue;
+            }
+            $headerColumns[(int) $columnIndex] = $normalized;
+        }
+
+        if (count($headerColumns) === 0) {
+            throw new RuntimeException('XLSX header is missing.');
+        }
+
+        $requiredHeaders = ['type', 'question_text', 'points', 'difficulty'];
+        foreach ($requiredHeaders as $column) {
+            if (! in_array($column, $headerColumns, true)) {
+                throw new RuntimeException("XLSX missing required column: {$column}");
+            }
+        }
+
+        $result = [];
+        for ($i = 1; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            if (! is_array($row) || count($row) === 0) {
+                continue;
+            }
+
+            $assoc = [];
+            foreach ($headerColumns as $columnIndex => $column) {
+                $assoc[$column] = trim((string) ($row[$columnIndex] ?? ''));
+            }
+
+            if ($this->isCsvRowEmpty($assoc)) {
+                continue;
+            }
+            $result[] = $assoc;
+        }
+
+        return $result;
     }
 
     private function persistCsvRow(QuestionBank $bank, User $actor, array $row): void

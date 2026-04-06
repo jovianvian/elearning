@@ -1,21 +1,21 @@
-@extends('layouts.app', ['title' => 'Question Banks'])
+@extends('layouts.app', ['title' => __('ui.question_banks')])
 
 @section('content')
-<div x-data="questionBankCrudPage({ subjects: @js(($subjects ?? collect())->map(fn($s) => ['id' => $s->id, 'name' => $s->name_id, 'code' => $s->code])->values()) })">
-    <x-ui.page-header title="Question Bank Management" subtitle="Manage shared and private subject question banks.">
+<div x-data="questionBankCrudPage({ subjects: @js(($subjects ?? collect())->map(fn($s) => ['id' => $s->id, 'name' => $s->name_id, 'code' => $s->code])->values()) })" data-async-list data-fragment="#question-banks-table-fragment">
+    <x-ui.page-header :title="__('ui.question_bank_management')" :subtitle="__('ui.question_bank_management_subtitle')">
         <x-slot:actions>
-            <a href="{{ route('question-banks.create') }}" class="tera-btn tera-btn-primary">
+            <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
                 <i data-lucide="plus" class="w-4 h-4"></i>{{ __('ui.add_question_bank') }}
-            </a>
+            </button>
         </x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search bank title or subject">
+    <x-ui.table-toolbar :search-value="request('q')" :search-placeholder="__('ui.search_bank_title_subject')">
         <x-slot:filters>
             <div>
                 <label class="tera-label">{{ __('ui.subjects') }}</label>
                 <select name="subject_id" class="tera-select">
-                    <option value="">All</option>
+                    <option value="">{{ __('ui.all') }}</option>
                     @foreach($subjects as $subject)
                         <option value="{{ $subject->id }}" @selected((string)request('subject_id') === (string)$subject->id)>{{ $subject->name_id }}</option>
                     @endforeach
@@ -24,7 +24,7 @@
             <div>
                 <label class="tera-label">{{ __('ui.visibility') }}</label>
                 <select name="visibility" class="tera-select">
-                    <option value="">All</option>
+                    <option value="">{{ __('ui.all') }}</option>
                     <option value="subject_shared" @selected(request('visibility') === 'subject_shared')>{{ __('ui.shared') }}</option>
                     <option value="private" @selected(request('visibility') === 'private')>{{ __('ui.private') }}</option>
                 </select>
@@ -32,52 +32,54 @@
         </x-slot:filters>
     </x-ui.table-toolbar>
 
-    <div class="tera-table-wrap">
-        <table class="tera-table">
-            <thead>
-            <tr>
-                <th>No</th>
-                <th>{{ __('ui.name') }}</th>
-                <th>{{ __('ui.subjects') }}</th>
-                <th>{{ __('ui.visibility') }}</th>
-                <th>{{ __('ui.questions') }}</th>
-                <th>{{ __('ui.creator') }}</th>
-                <th>{{ __('ui.action') }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            @forelse($banks as $bank)
+    <div id="question-banks-table-fragment">
+        <div class="tera-table-wrap">
+            <table class="tera-table">
+                <thead>
                 <tr>
-                    <td>{{ $banks->firstItem() + $loop->index }}</td>
-                    <td class="font-semibold">{{ $bank->title }}</td>
-                    <td>{{ $bank->subject->name_id ?? '-' }}</td>
-                    <td>
-                        @if($bank->visibility === 'subject_shared')
-                            <span class="tera-badge bg-skyx/20 text-sky-700">{{ __('ui.shared') }}</span>
-                        @else
-                            <span class="tera-badge bg-slate-200 text-slate-700">{{ __('ui.private') }}</span>
-                        @endif
-                    </td>
-                    <td>{{ $bank->questions_count }}</td>
-                    <td>{{ $bank->creator->full_name ?? '-' }}</td>
-                    <td>
-                        <div class="inline-flex justify-center gap-2">
-                            <a href="{{ route('question-banks.show', $bank) }}" class="tera-btn tera-btn-muted !px-3 !py-1.5">{{ __('ui.view') }}</a>
-                            <a href="{{ route('question-banks.edit', $bank) }}" class="tera-btn tera-btn-muted !px-3 !py-1.5">{{ __('ui.edit') }}</a>
-                            <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $bank->id }}, @js($bank->title))">{{ __('ui.delete') }}</button>
-                        </div>
-                    </td>
+                    <th>{{ __('ui.no') }}</th>
+                    <th>{{ __('ui.name') }}</th>
+                    <th>{{ __('ui.subjects') }}</th>
+                    <th>{{ __('ui.visibility') }}</th>
+                    <th>{{ __('ui.questions') }}</th>
+                    <th>{{ __('ui.creator') }}</th>
+                    <th>{{ __('ui.action') }}</th>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-slate-500">{{ __('ui.no_question_banks') }}</td>
-                </tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                @forelse($banks as $bank)
+                    <tr>
+                        <td>{{ $banks->firstItem() + $loop->index }}</td>
+                        <td class="font-semibold">{{ $bank->title }}</td>
+                        <td>{{ $bank->subject->name_id ?? '-' }}</td>
+                        <td>
+                            @if($bank->visibility === 'subject_shared')
+                                <span class="tera-badge bg-skyx/20 text-sky-700">{{ __('ui.shared') }}</span>
+                            @else
+                                <span class="tera-badge bg-slate-200 text-slate-700">{{ __('ui.private') }}</span>
+                            @endif
+                        </td>
+                        <td>{{ $bank->questions_count }}</td>
+                        <td>{{ $bank->creator->full_name ?? '-' }}</td>
+                        <td>
+                            <div class="inline-flex justify-center gap-2">
+                                <a href="{{ route('question-banks.show', $bank) }}" class="tera-btn tera-btn-muted !px-3 !py-1.5">{{ __('ui.view') }}</a>
+                                <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $bank->id }})">{{ __('ui.edit') }}</button>
+                                <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $bank->id }}, @js($bank->title))">{{ __('ui.delete') }}</button>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-slate-500">{{ __('ui.no_question_banks') }}</td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
 
-    <div class="mt-4">{{ $banks->links() }}</div>
+        <div class="mt-4">{{ $banks->links() }}</div>
+    </div>
 
     <x-ui.modal name="showModal" :title="__('ui.question_bank_form')" maxWidth="max-w-3xl">
         <form @submit.prevent="submitForm" class="space-y-4">
@@ -162,11 +164,8 @@ function questionBankCrudPage({ subjects }) {
             this.loading = true;
             this.errors = {};
             try {
-                const res = await fetch(`/question-banks/${id}/edit`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_load_question_bank')));
+                const { response, payload } = await window.Teramia.fetchJson(`/question-banks/${id}/edit`);
+                if (!response.ok || !payload?.ok) throw new Error(payload?.message || @js(__('ui.failed_to_load_question_bank')));
 
                 this.isEdit = true;
                 this.editId = id;
@@ -178,7 +177,7 @@ function questionBankCrudPage({ subjects }) {
                 };
                 this.showModal = true;
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
@@ -192,19 +191,12 @@ function questionBankCrudPage({ subjects }) {
             if (this.isEdit) body._method = 'PUT';
 
             try {
-                const res = await fetch(url, {
+                const { response, payload } = await window.Teramia.fetchJson(url, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify(body),
                 });
-                const payload = await res.json();
-                if (!res.ok) {
-                    if (res.status === 422) {
+                if (!response.ok) {
+                    if (response.status === 422) {
                         this.errors = payload.errors || {};
                         return;
                     }
@@ -212,47 +204,35 @@ function questionBankCrudPage({ subjects }) {
                 }
 
                 this.showModal = false;
-                Swal.fire({ icon: 'success', title: @js(__('ui.success')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#question-banks-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
         },
 
         async destroyItem(id, title) {
-            const confirm = await Swal.fire({
-                title: @js(__('ui.delete_question_bank_question')),
-                text: `Delete ${title}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                confirmButtonText: @js(__('ui.delete')),
-            });
+            const confirm = await window.Teramia.confirmDelete(
+                @js(__('ui.delete_question_bank_question')),
+                `${@js(__('ui.delete'))} ${title}?`
+            );
             if (!confirm.isConfirmed) return;
 
             try {
-                const res = await fetch(`/question-banks/${id}`, {
+                const { response, payload } = await window.Teramia.fetchJson(`/question-banks/${id}`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify({ _method: 'DELETE' }),
                 });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_question_bank')));
-                Swal.fire({ icon: 'success', title: @js(__('ui.deleted')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                if (!response.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_question_bank')));
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#question-banks-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             }
         },
     };
 }
 </script>
 @endsection
-

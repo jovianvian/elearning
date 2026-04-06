@@ -33,7 +33,14 @@ class NotificationController extends Controller
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Notification marked as read.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'Notification marked as read.',
+                'unread_count' => UserNotification::query()
+                    ->where('user_id', auth()->id())
+                    ->where('is_read', false)
+                    ->count(),
+            ]);
         }
 
         return back();
@@ -50,7 +57,11 @@ class NotificationController extends Controller
             ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'All notifications marked as read.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'All notifications marked as read.',
+                'unread_count' => 0,
+            ]);
         }
 
         return back()->with('success', 'All notifications marked as read.');

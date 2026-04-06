@@ -80,6 +80,7 @@ class QuestionBankController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Question bank created.',
                 'data' => $questionBank->load(['subject', 'creator']),
             ]);
@@ -105,6 +106,7 @@ class QuestionBankController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'data' => [
                     'id' => $questionBank->id,
                     'subject_id' => $questionBank->subject_id,
@@ -136,6 +138,7 @@ class QuestionBankController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
+                'ok' => true,
                 'message' => 'Question bank updated.',
                 'data' => $questionBank->fresh()->load(['subject', 'creator']),
             ]);
@@ -151,7 +154,10 @@ class QuestionBankController extends Controller
         $questionBank->delete();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Question bank moved to trash.']);
+            return response()->json([
+                'ok' => true,
+                'message' => 'Question bank moved to trash.',
+            ]);
         }
 
         return redirect()->route('question-banks.index')->with('success', 'Question bank moved to trash.');

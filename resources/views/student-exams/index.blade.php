@@ -1,9 +1,9 @@
-@extends('layouts.app', ['title' => 'My Exams'])
+@extends('layouts.app', ['title' => __('ui.my_exams')])
 
 @section('content')
     <div>
-        <h2 class="text-xl font-semibold">My Exams</h2>
-        <p class="text-sm text-slate-500">Available exams from your enrolled courses.</p>
+        <h2 class="text-xl font-semibold">{{ __('ui.my_exams') }}</h2>
+        <p class="text-sm text-slate-500">{{ __('ui.my_exams_subtitle') }}</p>
     </div>
 
     <div class="grid md:grid-cols-2 gap-4">
@@ -19,28 +19,28 @@
                 </div>
 
                 <div class="mt-3 text-xs text-slate-500 space-y-1">
-                    <div>Window: {{ $exam->start_at?->format('d M Y H:i') }} - {{ $exam->end_at?->format('d M Y H:i') }}</div>
-                    <div>Duration: {{ $exam->duration_minutes }} min | Max attempt: {{ $exam->max_attempts }}</div>
+                    <div>{{ __('ui.window') }}: {{ $exam->start_at?->format('d M Y H:i') }} - {{ $exam->end_at?->format('d M Y H:i') }}</div>
+                    <div>{{ __('ui.duration') }}: {{ $exam->duration_minutes }} {{ __('ui.minutes_short') }} | {{ __('ui.max_attempt') }}: {{ $exam->max_attempts }}</div>
                 </div>
 
                 @if($latestAttempt && $latestAttempt->status !== \App\Models\ExamAttempt::STATUS_IN_PROGRESS)
                     <div class="mt-4 flex items-center justify-between gap-2">
-                        <span class="text-xs text-slate-500">Status attempt: {{ str_replace('_', ' ', $latestAttempt->status) }}</span>
+                        <span class="text-xs text-slate-500">{{ __('ui.attempt_status') }}: {{ str_replace('_', ' ', $latestAttempt->status) }}</span>
                         <a href="{{ route('student-exams.attempt.result', $latestAttempt) }}" class="tera-btn tera-btn-primary !px-4 !py-2 !text-sm">
-                            {{ $latestAttempt->is_published || $exam->show_result_after_submit ? 'View Result' : 'Waiting Result' }}
+                            {{ $latestAttempt->is_published || $exam->show_result_after_submit ? __('ui.view_result') : __('ui.waiting_result') }}
                         </a>
                     </div>
                 @else
                     <form method="POST" action="{{ route('student-exams.start', $exam) }}" class="mt-4">
                         @csrf
                         <button class="tera-btn tera-btn-primary !px-4 !py-2 !text-sm">
-                            {{ $latestAttempt ? 'Continue Attempt' : 'Start Exam' }}
+                            {{ $latestAttempt ? __('ui.continue_attempt') : __('ui.start_exam') }}
                         </button>
                     </form>
                 @endif
             </div>
         @empty
-            <div class="bg-white rounded-xl border border-slate-200 p-6 text-slate-500">No exams available right now.</div>
+            <div class="bg-white rounded-xl border border-slate-200 p-6 text-slate-500">{{ __('ui.no_exams_available') }}</div>
         @endforelse
     </div>
 

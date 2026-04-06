@@ -6,6 +6,8 @@
         roles: @js($roles->map(fn($r) => ['id' => $r->id, 'name' => $r->name])->values()),
         classes: @js($classes->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values())
     })"
+    data-async-list
+    data-fragment="#users-table-fragment"
 >
     <x-ui.page-header title="User Management" subtitle="Manage Super Admin, Admin, Principal, Teacher, and Student accounts.">
         <x-slot:actions>
@@ -38,50 +40,52 @@
         </x-slot:filters>
     </x-ui.table-toolbar>
 
-    <div class="tera-table-wrap">
-        <table class="tera-table">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>{{ __('ui.name') }}</th>
-                    <th>{{ __('ui.role') }}</th>
-                    <th>NIS</th>
-                    <th>NIP</th>
-                    <th>{{ __('ui.email') }}</th>
-                    <th>{{ __('ui.status') }}</th>
-                    <th>{{ __('ui.action') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach($users as $user)
-                <tr id="user-row-{{ $user->id }}">
-                    <td>{{ $users->firstItem() + $loop->index }}</td>
-                    <td>
-                        <p class="font-semibold text-slate-800">{{ $user->full_name }}</p>
-                        <p class="text-xs text-slate-500">{{ $user->username }}</p>
-                    </td>
-                    <td>{{ $user->role?->name }}</td>
-                    <td>{{ $user->nis ?: '-' }}</td>
-                    <td>{{ $user->nip ?: '-' }}</td>
-                    <td>{{ $user->email ?: '-' }}</td>
-                    <td>
-                        <span class="tera-badge {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
-                            {{ $user->is_active ? __('ui.active') : __('ui.inactive') }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="inline-flex items-center gap-2">
-                            <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $user->id }})">{{ __('ui.edit') }}</button>
-                            <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyUser({{ $user->id }}, @js($user->full_name))">{{ __('ui.delete') }}</button>
-                        </div>
-                    </td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    </div>
+    <div id="users-table-fragment">
+        <div class="tera-table-wrap">
+            <table class="tera-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>{{ __('ui.name') }}</th>
+                        <th>{{ __('ui.role') }}</th>
+                        <th>NIS</th>
+                        <th>NIP</th>
+                        <th>{{ __('ui.email') }}</th>
+                        <th>{{ __('ui.status') }}</th>
+                        <th>{{ __('ui.action') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($users as $user)
+                    <tr id="user-row-{{ $user->id }}">
+                        <td>{{ $users->firstItem() + $loop->index }}</td>
+                        <td>
+                            <p class="font-semibold text-slate-800">{{ $user->full_name }}</p>
+                            <p class="text-xs text-slate-500">{{ $user->username }}</p>
+                        </td>
+                        <td>{{ $user->role?->name }}</td>
+                        <td>{{ $user->nis ?: '-' }}</td>
+                        <td>{{ $user->nip ?: '-' }}</td>
+                        <td>{{ $user->email ?: '-' }}</td>
+                        <td>
+                            <span class="tera-badge {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
+                                {{ $user->is_active ? __('ui.active') : __('ui.inactive') }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="inline-flex items-center gap-2">
+                                <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $user->id }})">{{ __('ui.edit') }}</button>
+                                <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyUser({{ $user->id }}, @js($user->full_name))">{{ __('ui.delete') }}</button>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
 
-    <div class="mt-4">{{ $users->links() }}</div>
+        <div class="mt-4">{{ $users->links() }}</div>
+    </div>
 
     <x-ui.modal name="showModal" :title="__('ui.user_form')" maxWidth="max-w-4xl">
         <form @submit.prevent="submitForm" class="space-y-4">
@@ -228,15 +232,8 @@ function userCrudPage({ roles, classes }) {
             this.loading = true;
             this.errors = {};
             try {
-                const res = await fetch(`/users/${userId}/edit`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                });
-
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_load_user')));
+                const { response, payload } = await window.Teramia.fetchJson(`/users/${userId}/edit`);
+                if (!response.ok || !payload?.ok) throw new Error(payload?.message || @js(__('ui.failed_to_load_user')));
 
                 this.isEdit = true;
                 this.editId = userId;
@@ -255,7 +252,7 @@ function userCrudPage({ roles, classes }) {
                 };
                 this.showModal = true;
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message || @js(__('ui.failed_to_load_user')) });
+                window.Teramia.toast('error', error.message || @js(__('ui.failed_to_load_user')));
             } finally {
                 this.loading = false;
             }
@@ -275,20 +272,13 @@ function userCrudPage({ roles, classes }) {
             if (this.isEdit) body._method = 'PUT';
 
             try {
-                const res = await fetch(url, {
+                const { response, payload } = await window.Teramia.fetchJson(url, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify(body),
                 });
 
-                const payload = await res.json();
-                if (!res.ok) {
-                    if (res.status === 422) {
+                if (!response.ok) {
+                    if (response.status === 422) {
                         this.errors = payload.errors || {};
                         return;
                     }
@@ -297,57 +287,35 @@ function userCrudPage({ roles, classes }) {
                 }
 
                 this.showModal = false;
-                Swal.fire({
-                    icon: 'success',
-                    title: @js(__('ui.success')),
-                    text: payload.message || @js(__('ui.save')),
-                    timer: 1300,
-                    showConfirmButton: false,
-                }).then(() => window.location.reload());
+                await window.Teramia.toast('success', payload.message || @js(__('ui.save')));
+                await window.Teramia.refreshFragment(window.location.href, '#users-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message || @js(__('ui.failed_to_save_user')) });
+                window.Teramia.toast('error', error.message || @js(__('ui.failed_to_save_user')));
             } finally {
                 this.loading = false;
             }
         },
 
         async destroyUser(userId, name) {
-            const confirm = await Swal.fire({
-                title: @js(__('ui.delete_user_question')),
-                text: `Delete ${name}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                confirmButtonText: @js(__('ui.delete')),
-                cancelButtonText: @js(__('ui.cancel')),
-            });
+            const confirm = await window.Teramia.confirmDelete(
+                @js(__('ui.delete_user_question')),
+                `Delete ${name}?`
+            );
 
             if (!confirm.isConfirmed) return;
 
             try {
-                const res = await fetch(`/users/${userId}`, {
+                const { response, payload } = await window.Teramia.fetchJson(`/users/${userId}`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify({ _method: 'DELETE' }),
                 });
 
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_user')));
+                if (!response.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_user')));
 
-                Swal.fire({
-                    icon: 'success',
-                    title: @js(__('ui.deleted')),
-                    text: payload.message || @js(__('ui.deleted')),
-                    timer: 1200,
-                    showConfirmButton: false,
-                }).then(() => window.location.reload());
+                await window.Teramia.toast('success', payload.message || @js(__('ui.deleted')));
+                await window.Teramia.refreshFragment(window.location.href, '#users-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message || @js(__('ui.failed_to_delete_user')) });
+                window.Teramia.toast('error', error.message || @js(__('ui.failed_to_delete_user')));
             }
         },
     };

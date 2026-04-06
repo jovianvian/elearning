@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => 'Academic Years'])
 
 @section('content')
-<div x-data="academicYearCrudPage()">
+<div x-data="academicYearCrudPage()" data-async-list data-fragment="#academic-years-table-fragment">
     <x-ui.page-header title="Academic Year Management" subtitle="Manage academic year periods and active year configuration.">
         <x-slot:actions>
             <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
@@ -23,39 +23,41 @@
         </x-slot:filters>
     </x-ui.table-toolbar>
 
-    <div class="tera-table-wrap">
-        <table class="tera-table">
-            <thead>
-            <tr>
-                <th>No</th>
-                <th>{{ __('ui.name') }}</th>
-                <th>{{ __('ui.start') }}</th>
-                <th>{{ __('ui.end') }}</th>
-                <th>{{ __('ui.active') }}</th>
-                <th>{{ __('ui.action') }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach($academicYears as $year)
+    <div id="academic-years-table-fragment">
+        <div class="tera-table-wrap">
+            <table class="tera-table">
+                <thead>
                 <tr>
-                    <td>{{ $academicYears->firstItem() + $loop->index }}</td>
-                    <td class="font-semibold">{{ $year->name }}</td>
-                    <td>{{ $year->start_date?->format('Y-m-d') }}</td>
-                    <td>{{ $year->end_date?->format('Y-m-d') }}</td>
-                    <td><span class="tera-badge {{ $year->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $year->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
-                    <td>
-                        <div class="inline-flex gap-2">
-                            <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $year->id }})">{{ __('ui.edit') }}</button>
-                            <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $year->id }}, @js($year->name))">{{ __('ui.delete') }}</button>
-                        </div>
-                    </td>
+                    <th>No</th>
+                    <th>{{ __('ui.name') }}</th>
+                    <th>{{ __('ui.start') }}</th>
+                    <th>{{ __('ui.end') }}</th>
+                    <th>{{ __('ui.active') }}</th>
+                    <th>{{ __('ui.action') }}</th>
                 </tr>
-            @endforeach
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                @foreach($academicYears as $year)
+                    <tr>
+                        <td>{{ $academicYears->firstItem() + $loop->index }}</td>
+                        <td class="font-semibold">{{ $year->name }}</td>
+                        <td>{{ $year->start_date?->format('Y-m-d') }}</td>
+                        <td>{{ $year->end_date?->format('Y-m-d') }}</td>
+                        <td><span class="tera-badge {{ $year->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $year->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                        <td>
+                            <div class="inline-flex gap-2">
+                                <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $year->id }})">{{ __('ui.edit') }}</button>
+                                <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyItem({{ $year->id }}, @js($year->name))">{{ __('ui.delete') }}</button>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
 
-    <div class="mt-4">{{ $academicYears->links() }}</div>
+        <div class="mt-4">{{ $academicYears->links() }}</div>
+    </div>
 
     <x-ui.modal name="showModal" :title="__('ui.academic_year_form')" maxWidth="max-w-2xl">
         <form @submit.prevent="submitForm" class="space-y-4">
@@ -116,11 +118,8 @@ function academicYearCrudPage() {
             this.loading = true;
             this.errors = {};
             try {
-                const res = await fetch(`/super-admin/academic-years/${id}/edit`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_load_academic_year')));
+                const { response, payload } = await window.Teramia.fetchJson(`/super-admin/academic-years/${id}/edit`);
+                if (!response.ok || !payload?.ok) throw new Error(payload?.message || @js(__('ui.failed_to_load_academic_year')));
 
                 this.isEdit = true;
                 this.editId = id;
@@ -132,7 +131,7 @@ function academicYearCrudPage() {
                 };
                 this.showModal = true;
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
@@ -146,19 +145,12 @@ function academicYearCrudPage() {
             if (this.isEdit) body._method = 'PUT';
 
             try {
-                const res = await fetch(url, {
+                const { response, payload } = await window.Teramia.fetchJson(url, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify(body),
                 });
-                const payload = await res.json();
-                if (!res.ok) {
-                    if (res.status === 422) {
+                if (!response.ok) {
+                    if (response.status === 422) {
                         this.errors = payload.errors || {};
                         return;
                     }
@@ -166,48 +158,38 @@ function academicYearCrudPage() {
                 }
 
                 this.showModal = false;
-                Swal.fire({ icon: 'success', title: @js(__('ui.success')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#academic-years-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             } finally {
                 this.loading = false;
             }
         },
 
         async destroyItem(id, name) {
-            const confirm = await Swal.fire({
-                title: @js(__('ui.delete_academic_year_question')),
-                text: `Delete ${name}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                confirmButtonText: @js(__('ui.delete')),
-            });
+            const confirm = await window.Teramia.confirmDelete(
+                @js(__('ui.delete_academic_year_question')),
+                `Delete ${name}?`
+            );
             if (!confirm.isConfirmed) return;
 
             try {
-                const res = await fetch(`/super-admin/academic-years/${id}`, {
+                const { response, payload } = await window.Teramia.fetchJson(`/super-admin/academic-years/${id}`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
                     body: JSON.stringify({ _method: 'DELETE' }),
                 });
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_academic_year')));
-                Swal.fire({ icon: 'success', title: @js(__('ui.deleted')), text: payload.message, timer: 1200, showConfirmButton: false })
-                    .then(() => window.location.reload());
+                if (!response.ok) throw new Error(payload.message || @js(__('ui.failed_to_delete_academic_year')));
+                await window.Teramia.toast('success', payload.message);
+                await window.Teramia.refreshFragment(window.location.href, '#academic-years-table-fragment');
             } catch (error) {
-                Swal.fire({ icon: 'error', title: @js(__('ui.error')), text: error.message });
+                window.Teramia.toast('error', error.message);
             }
         },
     };
 }
 </script>
 @endsection
+
 
 
