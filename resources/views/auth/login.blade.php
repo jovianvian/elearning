@@ -1,7 +1,7 @@
 ﻿@extends('layouts.auth', [
     'title' => __('auth.title'),
     'heading' => __('auth.login'),
-    'subheading' => 'Masuk menggunakan NIS, NIP, username, atau email sesuai role.'
+    'subheading' => __('auth.login_subheading')
 ])
 
 @section('content')
@@ -44,11 +44,11 @@
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Login Identifier Guide</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('auth.identifier_guide_title') }}</p>
             <div class="mt-2 space-y-1.5 text-sm text-slate-700">
-                <div><span class="font-semibold text-slate-900">Student:</span> NIS / Username / Email</div>
-                <div><span class="font-semibold text-slate-900">Teacher:</span> NIP / Username / Email</div>
-                <div><span class="font-semibold text-slate-900">Admin / Principal / Super Admin:</span> Username / Email</div>
+                <div><span class="font-semibold text-slate-900">{{ __('auth.identifier_student') }}</span></div>
+                <div><span class="font-semibold text-slate-900">{{ __('auth.identifier_teacher') }}</span></div>
+                <div><span class="font-semibold text-slate-900">{{ __('auth.identifier_admin') }}</span></div>
             </div>
         </div>
 
@@ -66,7 +66,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
             </svg>
             <span x-show="!isSubmitting">{{ __('auth.login') }}</span>
-            <span x-show="isSubmitting" x-cloak>Signing in...</span>
+            <span x-show="isSubmitting" x-cloak>{{ __('auth.signing_in') }}</span>
         </button>
     </form>
 

@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Services\ExamAccessService;
 use App\Services\ExamEngineService;
 use App\Services\ExamMonitoringService;
+use App\Services\StudentBillService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,8 @@ class StudentExamAttemptController extends Controller
     public function __construct(
         private readonly ExamAccessService $accessService,
         private readonly ExamEngineService $engineService,
-        private readonly ExamMonitoringService $monitoringService
+        private readonly ExamMonitoringService $monitoringService,
+        private readonly StudentBillService $billService
     ) {
     }
 
@@ -59,6 +61,11 @@ class StudentExamAttemptController extends Controller
         $student = auth()->user();
         abort_unless($this->accessService->canTakeExam($student, $exam), 403);
 
+        $eligibility = $this->billService->checkExamEligibility($student, $exam);
+        if (! $eligibility['eligible']) {
+            return back()->with('error', (string) ($eligibility['message'] ?? __('ui.exam_payment_required')));
+        }
+
         try {
             $attempt = $this->engineService->startOrResumeAttempt($exam, $student);
         } catch (\RuntimeException $e) {
@@ -94,7 +101,7 @@ class StudentExamAttemptController extends Controller
         abort_unless(auth()->user()->hasRole(Role::STUDENT), 403);
         abort_unless($this->accessService->canViewAttempt(auth()->user(), $attempt), 403);
 
-        $this->engineService->saveAnswers($attempt, $request->validated('answers'));
+        $this->engineService->saveAnswers($attempt, (array) $request->validated('answers', []));
 
         return back()->with('success', 'Answers saved.');
     }
@@ -113,7 +120,7 @@ class StudentExamAttemptController extends Controller
 
     public function result(ExamAttempt $attempt): View
     {
-        $attempt->load(['exam', 'answers.question', 'answers.selectedOption']);
+        $attempt->load(['exam', 'answers.question.options', 'answers.selectedOption']);
         abort_unless($this->accessService->canViewAttempt(auth()->user(), $attempt), 403);
         abort_unless(auth()->user()->hasRole(Role::STUDENT), 403);
 
@@ -130,7 +137,9 @@ class StudentExamAttemptController extends Controller
         abort_unless($this->accessService->canViewAttempt(auth()->user(), $attempt), 403);
 
         $eventType = $request->validated('event_type');
+        $metadata = (array) ($request->validated('metadata') ?? []);
         $this->monitoringService->logEvent($attempt, $eventType, [
+            ...$metadata,
             'ip' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);

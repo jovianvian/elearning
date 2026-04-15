@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Teramia E-Learning' }}</title>
+    <title>{{ $title ?? ($teraApp['app_name'] ?? 'Teramia E-Learning') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
@@ -61,10 +61,10 @@
             <div class="max-w-xl">
                 <div class="inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm backdrop-blur">
                     <span class="h-2.5 w-2.5 rounded-full bg-yellowx"></span>
-                    Platform SMP Teramia
+                    {{ __('ui.platform') }} {{ $teraApp['school_name'] ?? 'SMP Teramia' }}
                 </div>
 
-                <h1 class="mt-8 text-4xl font-black leading-tight xl:text-5xl">Teramia E-Learning</h1>
+                <h1 class="mt-8 text-4xl font-black leading-tight xl:text-5xl">{{ $teraApp['app_name'] ?? 'Teramia E-Learning' }}</h1>
                 <p class="mt-4 max-w-lg text-base leading-relaxed text-white/90">
                     Satu platform untuk pembelajaran, ujian online, dan monitoring akademik harian yang rapi, cepat, dan nyaman dipakai.
                 </p>
@@ -78,8 +78,8 @@
             </div>
 
             <div class="mt-10 rounded-2xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-sm">
-                <p class="text-sm font-semibold text-white">Empowering SMP Teramia classrooms with structured digital learning.</p>
-                <p class="mt-1 text-xs text-white/80">Secure access • Stable daily operations • Better academic visibility</p>
+                <p class="text-sm font-semibold text-white">Empowering {{ $teraApp['school_name'] ?? 'SMP Teramia' }} classrooms with structured digital learning.</p>
+                <p class="mt-1 text-xs text-white/80">Secure access - Stable daily operations - Better academic visibility</p>
             </div>
         </div>
     </section>
@@ -99,7 +99,7 @@
 
             <div class="rounded-[1.75rem] border border-slate-200/90 bg-white/95 p-7 shadow-[0_28px_70px_-30px_rgba(2,6,23,0.45)] sm:p-9 tera-reveal-up">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-black tracking-tight text-slate-900">{{ $heading ?? 'Masuk' }}</h2>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900">{{ $heading ?? __('auth.login') }}</h2>
                     @if(!empty($subheading))
                         <p class="mt-1.5 text-sm leading-relaxed text-slate-500">{{ $subheading }}</p>
                     @endif

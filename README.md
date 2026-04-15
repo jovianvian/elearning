@@ -22,8 +22,8 @@ Sudah mencakup:
 - Course management (multi teacher, auto expose student by class via snapshot)
 - Question bank & question CRUD
 - Import question:
-  - AIKEN (MCQ)
-  - CSV (MCQ, short answer, essay)
+  - AIKEN (single choice, multi-response, short answer, essay)
+  - CSV (single choice, multi-response, short answer, essay)
 - Exam engine:
   - schedule, timer, shuffle, auto submit
   - objective auto-grade + essay manual grade
@@ -62,6 +62,15 @@ DB_PORT=3306
 DB_DATABASE=teramia_elearning
 DB_USERNAME=root
 DB_PASSWORD=
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_mail@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=your_mail@gmail.com
+MAIL_FROM_NAME="Teramia E-Learning"
 ```
 
 ## Database Setup
@@ -109,6 +118,26 @@ App URL: `http://127.0.0.1:8000`
 - `/super-admin/restore-center`
 - `/suspicious-activities`
 
+## Password Reset Defaults By Role (Admin Action)
+- Users management now supports **Reset Password to Default** action.
+- Student: default password = `NIS`, `must_change_password = true`.
+- Teacher: default password = `NIP` (NUPTK-compatible). If missing/incomplete, fallback to `username`.
+- Principal/Admin/Super Admin: default password = `username`.
+- Action is audited via `activity_logs` with `action = password_reset_default`.
+
+## Forgot Password Email Notes
+- Forgot password flow uses Laravel token broker (`password_reset_tokens` table).
+- Configure SMTP values in `.env` as above.
+- For Gmail, use **App Password** (not account primary password).
+- In local/dev you can switch to `MAIL_MAILER=log` to inspect reset links in `storage/logs/laravel.log`.
+
+## Browser/Mobile Exam Security Reality
+- Web-based exam can log suspicious behavior (focus loss, visibility change, refresh, reconnect, duplicate tab hints).
+- It **cannot** fully lock mobile OS behavior (app switching, screenshots, secondary devices).
+- Recommended policy:
+  - high-stakes exams use supervised desktop/lab setup,
+  - mobile access allowed with strengthened suspicious monitoring and post-exam review.
+
 ## Core Tables
 - Access/identity: `roles`, `users`, `user_profiles`, `login_logs`
 - Settings/academic: `app_settings`, `academic_years`, `semesters`
@@ -123,4 +152,3 @@ App URL: `http://127.0.0.1:8000`
 Lihat dokumen:
 - `docs/phase-1-foundation.md` s/d `docs/phase-9-monitoring-audit-restore.md`
 - `docs/final-verification-checklist.md`
-

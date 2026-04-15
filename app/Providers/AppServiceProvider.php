@@ -52,11 +52,16 @@ class AppServiceProvider extends ServiceProvider
                     : null;
             }
 
+            if ($appSetting?->app_name) {
+                config(['app.name' => $appSetting->app_name]);
+            }
+
             $view->with('teraApp', [
                 'app_name' => $appSetting->app_name ?? config('app.name', 'Teramia E-Learning'),
                 'school_name' => $appSetting->school_name ?? 'SMP Teramia',
                 'logo' => $appSetting->school_logo ?? null,
                 'favicon' => $appSetting->school_favicon ?? null,
+                'building_background' => $appSetting->building_background ?? null,
                 'footer_text' => $appSetting->footer_text ?? null,
                 'primary_color' => $appSetting->primary_color ?? '#1D4ED8',
                 'secondary_color' => $appSetting->secondary_color ?? '#1E3A8A',

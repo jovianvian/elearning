@@ -9,6 +9,7 @@ use App\Models\QuestionBank;
 use App\Models\QuestionOption;
 use App\Services\QuestionAccessService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -30,8 +31,9 @@ class QuestionController extends Controller
         abort_unless($this->accessService->canManageBank(auth()->user(), $questionBank), 403);
 
         $data = $request->validated();
+        $imagePath = $this->resolveQuestionImagePath($data['question_image_path'] ?? null, $request->file('question_image_file'));
 
-        DB::transaction(function () use ($data, $questionBank): void {
+        DB::transaction(function () use ($data, $questionBank, $imagePath): void {
             $question = Question::create([
                 'question_bank_id' => $questionBank->id,
                 'subject_id' => $questionBank->subject_id,
@@ -39,6 +41,7 @@ class QuestionController extends Controller
                 'type' => $data['type'],
                 'question_text' => $data['question_text'],
                 'question_text_en' => $data['question_text_en'] ?? null,
+                'question_image_path' => $imagePath,
                 'explanation' => $data['explanation'] ?? null,
                 'explanation_en' => $data['explanation_en'] ?? null,
                 'points' => $data['points'],
@@ -50,8 +53,14 @@ class QuestionController extends Controller
                 'is_active' => (bool) ($data['is_active'] ?? false),
             ]);
 
-            if ($data['type'] === Question::TYPE_MULTIPLE_CHOICE) {
-                $this->syncMultipleChoiceOptions($question, $data['options'], strtoupper((string) $data['correct_option']));
+            if (in_array($data['type'], [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE], true)) {
+                $correctOptionKeys = $data['type'] === Question::TYPE_MULTIPLE_CHOICE
+                    ? [strtoupper((string) $data['correct_option'])]
+                    : array_values(array_unique(array_map(
+                        static fn ($value) => strtoupper(trim((string) $value)),
+                        (array) ($data['correct_options'] ?? [])
+                    )));
+                $this->syncObjectiveOptions($question, $data['options'], $correctOptionKeys);
             }
         });
 
@@ -74,12 +83,18 @@ class QuestionController extends Controller
         abort_unless($this->accessService->canManageBank(auth()->user(), $question->bank), 403);
 
         $data = $request->validated();
+        $imagePath = $this->resolveQuestionImagePath(
+            $data['question_image_path'] ?? null,
+            $request->file('question_image_file'),
+            $question->question_image_path
+        );
 
-        DB::transaction(function () use ($question, $data): void {
+        DB::transaction(function () use ($question, $data, $imagePath): void {
             $question->update([
                 'type' => $data['type'],
                 'question_text' => $data['question_text'],
                 'question_text_en' => $data['question_text_en'] ?? null,
+                'question_image_path' => $imagePath,
                 'explanation' => $data['explanation'] ?? null,
                 'explanation_en' => $data['explanation_en'] ?? null,
                 'points' => $data['points'],
@@ -90,8 +105,14 @@ class QuestionController extends Controller
                 'is_active' => (bool) ($data['is_active'] ?? false),
             ]);
 
-            if ($data['type'] === Question::TYPE_MULTIPLE_CHOICE) {
-                $this->syncMultipleChoiceOptions($question, $data['options'], strtoupper((string) $data['correct_option']));
+            if (in_array($data['type'], [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE], true)) {
+                $correctOptionKeys = $data['type'] === Question::TYPE_MULTIPLE_CHOICE
+                    ? [strtoupper((string) $data['correct_option'])]
+                    : array_values(array_unique(array_map(
+                        static fn ($value) => strtoupper(trim((string) $value)),
+                        (array) ($data['correct_options'] ?? [])
+                    )));
+                $this->syncObjectiveOptions($question, $data['options'], $correctOptionKeys);
             } else {
                 $question->options()->delete();
             }
@@ -114,9 +135,13 @@ class QuestionController extends Controller
             ->with('success', 'Question moved to trash.');
     }
 
-    private function syncMultipleChoiceOptions(Question $question, array $options, string $correctOption): void
+    private function syncObjectiveOptions(Question $question, array $options, array $correctOptions): void
     {
         $question->options()->delete();
+        $normalizedCorrect = array_values(array_unique(array_map(
+            static fn ($value) => strtoupper(trim((string) $value)),
+            $correctOptions
+        )));
 
         foreach ($options as $option) {
             $key = strtoupper(trim((string) ($option['key'] ?? '')));
@@ -126,7 +151,7 @@ class QuestionController extends Controller
                 'option_key' => $key,
                 'option_text' => trim((string) ($option['text'] ?? '')),
                 'option_text_en' => null,
-                'is_correct' => $key === $correctOption,
+                'is_correct' => in_array($key, $normalizedCorrect, true),
             ]);
         }
     }
@@ -137,5 +162,23 @@ class QuestionController extends Controller
 
         return $normalized === '' ? null : $normalized;
     }
-}
 
+    private function resolveQuestionImagePath(?string $rawPath, ?UploadedFile $uploadedFile, ?string $existingPath = null): ?string
+    {
+        if ($uploadedFile !== null) {
+            $stored = $uploadedFile->store('questions', 'public');
+
+            return 'storage/'.$stored;
+        }
+
+        $path = trim((string) $rawPath);
+        if ($path === '') {
+            return $existingPath;
+        }
+
+        $normalized = str_replace('\\', '/', $path);
+        $normalized = preg_replace('#^(\./)+#', '', $normalized) ?? $normalized;
+
+        return $normalized;
+    }
+}

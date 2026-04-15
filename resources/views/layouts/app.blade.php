@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="{{ app()->getLocale() }}" class="h-full m-0 p-0">
 <head>
+    @php
+        $buildingBackgroundUrl = null;
+        $customBuilding = $teraApp['building_background'] ?? null;
+        if (!empty($customBuilding)) {
+            $buildingBackgroundUrl = $customBuilding;
+        } elseif (file_exists(public_path('images/branding/school-building.jpg'))) {
+            $buildingBackgroundUrl = asset('images/branding/school-building.jpg');
+        }
+    @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -62,9 +71,24 @@
             --shell-surface-border-on-sidebar: rgb(255 255 255 / .24);
             --tera-radius: .75rem;
             --tera-radius-card: 1rem;
+            --tera-building-bg: none;
         }
+        @if($buildingBackgroundUrl)
+        :root{ --tera-building-bg: url('{{ $buildingBackgroundUrl }}'); }
+        @endif
 
         [x-cloak]{display:none!important}
+
+        body.tera-app-bg{
+            background-color:#f8fafc;
+            background-image:
+                linear-gradient(rgba(248, 250, 252, .80), rgba(248, 250, 252, .80)),
+                var(--tera-building-bg);
+            background-size:cover;
+            background-position:center;
+            background-repeat:no-repeat;
+            background-attachment:fixed;
+        }
 
         .tera-card{
             border-radius: var(--tera-radius-card);
@@ -84,13 +108,16 @@
             padding:.6rem 1rem;
             font-size:.875rem;
             font-weight:600;
+            border:1px solid transparent;
             transition:all .2s ease;
         }
 
-        .tera-btn-primary{background:var(--tera-primary);color:#fff}
+        .tera-btn-primary{background:var(--tera-primary);color:#fff;border-color:rgba(15,23,42,.15)}
         .tera-btn-primary:hover{filter:brightness(.94); transform: translateY(-1px)}
-        .tera-btn-muted{background:#fff;color:#0F172A;border:1px solid rgb(203 213 225 / 1)}
-        .tera-btn-muted:hover{background:#f8fafc}
+        .tera-btn-muted{background:#f8fafc;color:#1e293b;border-color:#cbd5e1}
+        .tera-btn-muted:hover{background:#f1f5f9}
+        .tera-btn-reset{background:#eef2ff;color:#1e3a8a;border-color:#c7d2fe}
+        .tera-btn-reset:hover{background:#e0e7ff}
         .tera-btn-danger{background:#DC2626;color:#fff}
         .tera-btn-danger:hover{filter:brightness(.94)}
         .tera-btn-outline{background:transparent;border:1px solid var(--tera-primary);color:var(--tera-primary)}
@@ -172,7 +199,7 @@
         .tera-table td{
             padding:.85rem .9rem;
             border-top:1px solid rgb(241 245 249 / 1);
-            vertical-align:top;
+            vertical-align:middle;
             text-align: center !important;
         }
 
@@ -183,10 +210,36 @@
         .tera-badge{
             display:inline-flex;
             align-items:center;
+            justify-content:center;
             padding:.22rem .55rem;
             border-radius:9999px;
             font-size:.72rem;
             font-weight:700;
+            line-height:1.1;
+        }
+        .tera-status-badge{
+            min-width:64px;
+            margin-inline:auto;
+        }
+
+        .tera-toolbar-main{
+            display:grid;
+            gap:.75rem;
+            align-items:end;
+        }
+        .tera-toolbar-fields{
+            display:grid;
+            gap:.75rem;
+        }
+        .tera-toolbar-filters{
+            display:grid;
+            gap:.75rem;
+        }
+        .tera-toolbar-actions{
+            display:flex;
+            align-items:center;
+            justify-content:flex-end;
+            gap:.5rem;
         }
 
         .tera-page{
@@ -210,6 +263,27 @@
             .shell-gutter{
                 padding-left: 1.5rem;
                 padding-right: 1.5rem;
+            }
+            .tera-toolbar-filters{
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px){
+            .tera-toolbar-main{
+                grid-template-columns: minmax(0, 1fr) auto;
+            }
+            .tera-toolbar-fields{
+                grid-template-columns: minmax(250px, 1.1fr) minmax(0, 1.9fr);
+            }
+            .tera-toolbar-filters{
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1400px){
+            .tera-toolbar-filters{
+                grid-template-columns: repeat(4, minmax(0, 1fr));
             }
         }
 
@@ -235,6 +309,9 @@
             .mobile-table-scroll > table{
                 min-width: 760px;
             }
+            .tera-toolbar-actions{
+                justify-content:flex-end;
+            }
         }
 
         .sidebar-link-reset:focus,
@@ -244,7 +321,7 @@
         }
     </style>
 </head>
-<body class="h-full m-0 p-0 bg-appbg text-ink antialiased">
+<body class="h-full m-0 p-0 tera-app-bg text-ink antialiased">
 <div x-data="{ sidebarOpen: false, sidebarMini: false }" class="min-h-screen">
     <div
         x-show="sidebarOpen"
@@ -337,12 +414,104 @@
                 const current = document.querySelector(selector);
                 if (incoming && current) {
                     current.innerHTML = incoming.innerHTML;
-                    if (window.lucide?.createIcons) {
-                        window.lucide.createIcons();
-                    }
+                    this.initDynamicUi(current);
                     return true;
                 }
                 return false;
+            },
+
+            initDynamicUi(scope = document) {
+                const root = scope instanceof Element || scope instanceof Document ? scope : document;
+
+                if (window.Alpine?.initTree && root instanceof Element) {
+                    window.Alpine.initTree(root);
+                }
+
+                if (window.lucide?.createIcons) {
+                    window.lucide.createIcons();
+                }
+
+                root.querySelectorAll('input[type="datetime-local"], .js-flatpickr').forEach((el) => {
+                    if (el.dataset.flatpickrBound === '1') return;
+                    flatpickr(el, { enableTime: true, dateFormat: 'Y-m-d H:i' });
+                    el.dataset.flatpickrBound = '1';
+                });
+
+                root.querySelectorAll('form').forEach((form) => {
+                    if (form.dataset.deleteConfirmBound === '1') return;
+
+                    const methodInput = form.querySelector('input[name="_method"]');
+                    if (!(methodInput && methodInput.value.toUpperCase() === 'DELETE')) return;
+
+                    form.dataset.deleteConfirmBound = '1';
+                    form.addEventListener('submit', (e) => {
+                        if (form.dataset.confirmed === '1') return;
+                        e.preventDefault();
+
+                        window.Teramia.confirmDelete().then((result) => {
+                            if (result.isConfirmed) {
+                                form.dataset.confirmed = '1';
+                                form.submit();
+                            }
+                        });
+                    });
+                });
+
+                root.querySelectorAll('form').forEach((form) => {
+                    if (form.dataset.submitLockBound === '1') return;
+                    if ((form.method || '').toUpperCase() === 'GET') return;
+                    if (form.dataset.noSubmitLock === 'true') return;
+
+                    form.dataset.submitLockBound = '1';
+                    form.addEventListener('submit', () => {
+                        if (form.dataset.submitting === '1') return;
+                        form.dataset.submitting = '1';
+
+                        const clickable = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                        clickable.forEach((node) => {
+                            if (!(node instanceof HTMLElement)) return;
+                            if (node.dataset.originalHtml === undefined) {
+                                node.dataset.originalHtml = node.innerHTML ?? '';
+                            }
+                            node.setAttribute('disabled', 'disabled');
+                            node.classList.add('opacity-70', 'cursor-not-allowed');
+
+                            const loadingText = node.dataset.loadingText || @json(__('ui.processing'));
+                            if (node.tagName.toLowerCase() === 'button') {
+                                node.innerHTML = loadingText;
+                            } else if (node instanceof HTMLInputElement) {
+                                node.value = loadingText;
+                            }
+                        });
+                    });
+                });
+
+                root.querySelectorAll('[data-chart]').forEach((canvas) => {
+                    try {
+                        if (canvas.dataset.chartInitialized === '1') return;
+
+                        const payload = JSON.parse(canvas.dataset.chart);
+                        const existing = Chart.getChart(canvas);
+                        if (existing) existing.destroy();
+
+                        const chart = new Chart(canvas, payload);
+                        canvas._teraChart = chart;
+                        canvas.dataset.chartInitialized = '1';
+                    } catch (err) {}
+                });
+
+                if (window.matchMedia('(max-width: 1023px)').matches) {
+                    root.querySelectorAll('main table, table').forEach((table) => {
+                        const parent = table.parentElement;
+                        if (!parent) return;
+                        if (parent.classList.contains('tera-table-wrap') || parent.classList.contains('mobile-table-scroll')) return;
+
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'mobile-table-scroll rounded-xl border border-slate-200 bg-white';
+                        parent.insertBefore(wrapper, table);
+                        wrapper.appendChild(table);
+                    });
+                }
             },
 
             wireAsyncList(rootElementOrSelector, fragmentSelector, formSelector = 'form[method="GET"]') {
@@ -356,8 +525,13 @@
 
                 const navigate = async (url) => {
                     const nextUrl = typeof url === 'string' ? url : String(url);
-                    window.history.replaceState({}, '', nextUrl);
-                    await this.refreshFragment(nextUrl, fragmentSelector);
+                    root.dispatchEvent(new CustomEvent('teramia:async-start', { bubbles: true }));
+                    try {
+                        window.history.replaceState({}, '', nextUrl);
+                        await this.refreshFragment(nextUrl, fragmentSelector);
+                    } finally {
+                        root.dispatchEvent(new CustomEvent('teramia:async-end', { bubbles: true }));
+                    }
                 };
 
                 if (form) {
@@ -417,55 +591,7 @@
             }
         };
 
-        lucide.createIcons();
-
-        document.querySelectorAll('input[type="datetime-local"], .js-flatpickr').forEach((el) => {
-            flatpickr(el, { enableTime: true, dateFormat: 'Y-m-d H:i' });
-        });
-
-        document.querySelectorAll('form').forEach((form) => {
-            const methodInput = form.querySelector('input[name="_method"]');
-            if (methodInput && methodInput.value.toUpperCase() === 'DELETE') {
-                form.addEventListener('submit', (e) => {
-                    if (form.dataset.confirmed === '1') return;
-                    e.preventDefault();
-
-                    window.Teramia.confirmDelete().then((result) => {
-                        if (result.isConfirmed) {
-                            form.dataset.confirmed = '1';
-                            form.submit();
-                        }
-                    });
-                });
-            }
-        });
-
-        document.querySelectorAll('[data-chart]').forEach((canvas) => {
-            try {
-                if (canvas.dataset.chartInitialized === '1') return;
-
-                const payload = JSON.parse(canvas.dataset.chart);
-                const existing = Chart.getChart(canvas);
-                if (existing) existing.destroy();
-
-                const chart = new Chart(canvas, payload);
-                canvas._teraChart = chart;
-                canvas.dataset.chartInitialized = '1';
-            } catch (err) {}
-        });
-
-        if (window.matchMedia('(max-width: 1023px)').matches) {
-            document.querySelectorAll('main table').forEach((table) => {
-                const parent = table.parentElement;
-                if (!parent) return;
-                if (parent.classList.contains('tera-table-wrap') || parent.classList.contains('mobile-table-scroll')) return;
-
-                const wrapper = document.createElement('div');
-                wrapper.className = 'mobile-table-scroll rounded-xl border border-slate-200 bg-white';
-                parent.insertBefore(wrapper, table);
-                wrapper.appendChild(table);
-            });
-        }
+        window.Teramia.initDynamicUi(document);
 
         document.querySelectorAll('[data-async-list][data-fragment]').forEach((el) => {
             const fragmentSelector = el.dataset.fragment;

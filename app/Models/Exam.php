@@ -11,6 +11,13 @@ class Exam extends Model
 {
     use SoftDeletes;
 
+    public const TYPE_OBJECTIVE = 'objective';
+    public const TYPE_OBJECTIVE_SINGLE_CHOICE = 'objective_single_choice';
+    public const TYPE_OBJECTIVE_MULTI_RESPONSE = 'objective_multi_response';
+    public const TYPE_OBJECTIVE_SHORT_ANSWER = 'objective_short_answer';
+    public const TYPE_ESSAY = 'essay';
+    public const TYPE_MIXED = 'mixed';
+
     public const STATUS_DRAFT = 'draft';
     public const STATUS_SCHEDULED = 'scheduled';
     public const STATUS_ACTIVE = 'active';
@@ -21,7 +28,7 @@ class Exam extends Model
     protected $fillable = [
         'course_id', 'title', 'description', 'created_by', 'exam_type', 'start_at', 'end_at', 'duration_minutes',
         'shuffle_questions', 'shuffle_options', 'auto_submit', 'show_result_after_submit', 'show_answer_key',
-        'show_explanation', 'max_attempts', 'target_score', 'objective_weight_percent', 'essay_weight_percent',
+        'show_explanation', 'max_attempts', 'required_paid_month', 'target_score', 'objective_weight_percent', 'essay_weight_percent',
         'status', 'is_published',
     ];
 
@@ -36,6 +43,7 @@ class Exam extends Model
             'show_result_after_submit' => 'boolean',
             'show_answer_key' => 'boolean',
             'show_explanation' => 'boolean',
+            'required_paid_month' => 'integer',
             'is_published' => 'boolean',
             'target_score' => 'decimal:2',
             'objective_weight_percent' => 'decimal:2',

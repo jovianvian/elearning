@@ -21,4 +21,13 @@ return [
     'dashboard' => 'Dasbor',
     'switch_lang' => 'Bahasa',
     'status' => 'Status',
+    'login_subheading' => 'Masuk menggunakan NIS, NIP, username, atau email sesuai role.',
+    'forgot_subheading' => 'Masukkan email akun untuk menerima tautan reset kata sandi.',
+    'forgot_email_help' => 'Jika akun tidak memiliki email aktif, minta admin melakukan reset password default.',
+    'reset_subheading' => 'Buat kata sandi baru untuk melanjutkan akses akun.',
+    'identifier_guide_title' => 'Panduan Identifier Login',
+    'identifier_student' => 'Siswa: NIS / Username / Email',
+    'identifier_teacher' => 'Guru: NIP / Username / Email',
+    'identifier_admin' => 'Admin / Principal / Super Admin: Username / Email',
+    'signing_in' => 'Sedang masuk...',
 ];

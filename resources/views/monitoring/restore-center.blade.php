@@ -1,9 +1,9 @@
-@extends('layouts.app', ['title' => 'Restore Center'])
+@extends('layouts.app', ['title' => __('ui.restore_center')])
 
 @section('content')
-    <x-ui.page-header title="Restore Center" subtitle="Review deleted records and restore important data safely." />
+    <x-ui.page-header :title="__('ui.restore_center_title')" :subtitle="__('ui.restore_center_subtitle')" />
 
-    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search deleted item label">
+    <x-ui.table-toolbar :search-value="request('q')" :search-placeholder="__('ui.search_deleted_item_label')">
         <x-slot:filters>
             <div>
                 <label class="tera-label">{{ __('ui.entity') }}</label>
@@ -20,7 +20,7 @@
         <table class="tera-table">
             <thead>
             <tr>
-                <th>No</th>
+                <th>{{ __('ui.no') }}</th>
                 <th>ID</th>
                 <th>{{ __('ui.label') }}</th>
                 <th>{{ __('ui.deleted_at') }}</th>

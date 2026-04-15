@@ -6,6 +6,7 @@ use App\Http\Requests\StoreSemesterRequest;
 use App\Http\Requests\UpdateSemesterRequest;
 use App\Models\AcademicYear;
 use App\Models\Semester;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -115,7 +116,19 @@ class SemesterController extends Controller
 
     public function destroy(Request $request, Semester $semester): RedirectResponse|JsonResponse
     {
-        $semester->delete();
+        try {
+            $semester->delete();
+        } catch (QueryException $exception) {
+            $message = 'Semester cannot be deleted because it is still referenced by active academic data.';
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => $message,
+                ], 422);
+            }
+
+            return back()->with('error', $message);
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

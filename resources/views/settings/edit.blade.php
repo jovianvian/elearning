@@ -1,9 +1,9 @@
-@extends('layouts.app', ['title' => 'Settings'])
+@extends('layouts.app', ['title' => __('ui.settings')])
 
 @section('content')
-<x-ui.page-header title="Application Settings" subtitle="Manage branding, locale, school information, and active academic period." />
+<x-ui.page-header :title="__('ui.application_settings_title')" :subtitle="__('ui.application_settings_subtitle')" />
 
-<form method="POST" action="{{ route('super-admin.settings.update') }}" class="tera-card" x-data="{}" autocomplete="off">
+<form method="POST" action="{{ route('super-admin.settings.update') }}" enctype="multipart/form-data" class="tera-card" x-data="{}" autocomplete="off">
     @csrf
     @method('PUT')
 
@@ -43,6 +43,34 @@
                 <div>
                     <label class="tera-label">{{ __('ui.accent_color') }}</label>
                     <input name="accent_color" class="tera-input" value="{{ old('accent_color', $setting->accent_color) }}" spellcheck="false">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-sm font-bold text-slate-800 mb-3">{{ __('ui.branding_assets') }}</h3>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="tera-label">{{ __('ui.school_logo_url_path') }}</label>
+                    <input name="school_logo" class="tera-input" value="{{ old('school_logo', $setting->school_logo) }}" placeholder="/storage/branding/logo/school-logo.png">
+                    <input type="file" name="school_logo_file" class="tera-input" accept="image/*">
+                    <p class="text-xs text-slate-500">{{ __('ui.school_logo_helper') }}</p>
+                    @if(!empty($setting->school_logo))
+                        <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                            <img src="{{ \Illuminate\Support\Str::startsWith($setting->school_logo, ['http://','https://','/']) ? $setting->school_logo : asset($setting->school_logo) }}" alt="{{ __('ui.school_logo') }}" class="h-14 w-14 object-contain">
+                        </div>
+                    @endif
+                </div>
+                <div class="space-y-2">
+                    <label class="tera-label">{{ __('ui.building_background_url_path') }}</label>
+                    <input name="building_background" class="tera-input" value="{{ old('building_background', $setting->building_background) }}" placeholder="/storage/branding/background/school-building.jpg">
+                    <input type="file" name="building_background_file" class="tera-input" accept="image/*">
+                    <p class="text-xs text-slate-500">{{ __('ui.building_background_helper') }}</p>
+                    @if(!empty($setting->building_background))
+                        <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                            <img src="{{ \Illuminate\Support\Str::startsWith($setting->building_background, ['http://','https://','/']) ? $setting->building_background : asset($setting->building_background) }}" alt="{{ __('ui.building_background') }}" class="h-20 w-full rounded object-cover">
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

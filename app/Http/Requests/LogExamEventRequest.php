@@ -18,6 +18,10 @@ class LogExamEventRequest extends FormRequest
             'event_type' => [
                 'required',
                 Rule::in([
+                    'exam_start',
+                    'exam_submit',
+                    'auto_submit',
+                    'tab_switch',
                     'visibility_hidden',
                     'visibility_visible',
                     'window_blur',
@@ -25,9 +29,11 @@ class LogExamEventRequest extends FormRequest
                     'refresh',
                     'reconnect',
                     'duplicate_session',
+                    'multiple_tabs_detected',
+                    'heartbeat',
                 ]),
             ],
+            'metadata' => ['nullable', 'array'],
         ];
     }
 }
-

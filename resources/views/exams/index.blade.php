@@ -72,7 +72,22 @@
                         <td>{{ $exams->firstItem() + $loop->index }}</td>
                         <td>
                             <div class="font-medium">{{ $exam->title }}</div>
-                            <div class="text-xs text-slate-500">{{ $exam->exam_type }} | {{ $exam->duration_minutes }} {{ __('ui.minutes_short') }}</div>
+                            <div class="text-xs text-slate-500">
+                                @switch($exam->exam_type)
+                                    @case('objective_single_choice')
+                                        Objective - Single Choice
+                                        @break
+                                    @case('objective_multi_response')
+                                        Objective - Multi Response
+                                        @break
+                                    @case('objective_short_answer')
+                                        Objective - Short Answer
+                                        @break
+                                    @default
+                                        {{ ucfirst(str_replace('_', ' ', $exam->exam_type)) }}
+                                @endswitch
+                                | {{ $exam->duration_minutes }} {{ __('ui.minutes_short') }}
+                            </div>
                         </td>
                         <td>
                             <div>{{ $exam->course?->title }}</div>
@@ -84,7 +99,7 @@
                         </td>
                         <td class="text-center">{{ $exam->max_attempts }}</td>
                         <td class="text-center">
-                            <span class="tera-badge bg-skyx/20 text-sky-700">{{ __('ui.status_'.$exam->effective_status) }}</span>
+                            <span class="tera-badge tera-status-badge bg-skyx/20 text-sky-700">{{ __('ui.status_'.$exam->effective_status) }}</span>
                         </td>
                         <td class="text-center">{{ $exam->is_published ? __('ui.yes') : __('ui.no') }}</td>
                         <td>

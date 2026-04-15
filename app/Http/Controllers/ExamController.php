@@ -140,6 +140,7 @@ class ExamController extends Controller
                 'show_answer_key' => (bool) ($data['show_answer_key'] ?? false),
                 'show_explanation' => (bool) ($data['show_explanation'] ?? false),
                 'max_attempts' => (int) ($data['max_attempts'] ?? 1),
+                'required_paid_month' => isset($data['required_paid_month']) && $data['required_paid_month'] !== '' ? (int) $data['required_paid_month'] : null,
                 'target_score' => (float) ($data['target_score'] ?? 100),
                 'objective_weight_percent' => (float) ($data['objective_weight_percent'] ?? 60),
                 'essay_weight_percent' => (float) ($data['essay_weight_percent'] ?? 40),
@@ -236,6 +237,7 @@ class ExamController extends Controller
                 'show_answer_key' => (bool) ($data['show_answer_key'] ?? false),
                 'show_explanation' => (bool) ($data['show_explanation'] ?? false),
                 'max_attempts' => (int) ($data['max_attempts'] ?? 1),
+                'required_paid_month' => isset($data['required_paid_month']) && $data['required_paid_month'] !== '' ? (int) $data['required_paid_month'] : null,
                 'target_score' => (float) ($data['target_score'] ?? 100),
                 'objective_weight_percent' => (float) ($data['objective_weight_percent'] ?? 60),
                 'essay_weight_percent' => (float) ($data['essay_weight_percent'] ?? 40),
@@ -309,7 +311,6 @@ class ExamController extends Controller
         $user = auth()->user();
         $query = Course::query()
             ->with(['subject', 'schoolClass', 'academicYear', 'semester'])
-            ->where('is_published', true)
             ->latest();
 
         if ($user->hasRole(Role::TEACHER)) {
@@ -414,10 +415,10 @@ class ExamController extends Controller
             }
         }
 
-        if ($examType === 'objective') {
+        if (in_array($examType, [Exam::TYPE_OBJECTIVE, Exam::TYPE_OBJECTIVE_SINGLE_CHOICE, Exam::TYPE_OBJECTIVE_MULTI_RESPONSE, Exam::TYPE_OBJECTIVE_SHORT_ANSWER], true)) {
             $objectiveWeight = 100.0;
             $essayWeight = 0.0;
-        } elseif ($examType === 'essay') {
+        } elseif ($examType === Exam::TYPE_ESSAY) {
             $objectiveWeight = 0.0;
             $essayWeight = 100.0;
         } else {

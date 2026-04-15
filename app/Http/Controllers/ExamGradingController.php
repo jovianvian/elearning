@@ -65,7 +65,7 @@ class ExamGradingController extends Controller
 
     public function show(ExamAttempt $attempt): View
     {
-        $attempt->load(['exam.course.subject', 'student', 'answers.question']);
+        $attempt->load(['exam.course.subject', 'student', 'answers.question.options', 'answers.selectedOption']);
         abort_unless($this->accessService->canViewAttempt(auth()->user(), $attempt), 403);
         abort_unless(auth()->user()->hasRole(Role::SUPER_ADMIN, Role::ADMIN, Role::TEACHER), 403);
 
@@ -78,9 +78,9 @@ class ExamGradingController extends Controller
         abort_unless($this->accessService->canViewAttempt(auth()->user(), $attempt), 403);
         abort_unless(auth()->user()->hasRole(Role::SUPER_ADMIN, Role::ADMIN, Role::TEACHER), 403);
 
-        $this->engineService->gradeEssayAnswers($attempt, auth()->user(), $request->validated('grades'));
+        $this->engineService->gradeSubjectiveAnswers($attempt, auth()->user(), $request->validated('grades'));
 
-        return back()->with('success', 'Essay grading updated.');
+        return back()->with('success', 'Subjective grading updated.');
     }
 
     public function examResults(Exam $exam): View

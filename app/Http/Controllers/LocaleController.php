@@ -14,8 +14,11 @@ class LocaleController extends Controller
 
         session(['locale' => $locale]);
 
-        if (auth()->check() && auth()->user()->profile) {
-            auth()->user()->profile()->update(['preferred_language' => $locale]);
+        if (auth()->check()) {
+            auth()->user()->profile()->updateOrCreate(
+                ['user_id' => auth()->id()],
+                ['preferred_language' => $locale]
+            );
         }
 
         if ($request->expectsJson()) {

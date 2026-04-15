@@ -16,7 +16,8 @@ class SuspiciousActivityController extends Controller
 
         $query = SuspiciousActivityLog::query()
             ->with(['attempt.exam.course', 'user'])
-            ->latest();
+            ->orderByDesc('last_detected_at')
+            ->latest('id');
 
         if ($user->hasRole(Role::TEACHER)) {
             $query->whereHas('attempt.exam.course.teachers', fn ($q) => $q->where('users.id', $user->id));
@@ -40,14 +41,72 @@ class SuspiciousActivityController extends Controller
             $query->where('activity_type', $activityType);
         }
 
-        $logs = $query->latest()->paginate(25)->withQueryString();
-        $activityTypes = SuspiciousActivityLog::query()
+        if ($examId = $request->integer('exam_id')) {
+            $query->whereHas('attempt', fn ($aq) => $aq->where('exam_id', $examId));
+        }
+
+        if ($studentId = $request->integer('student_id')) {
+            $query->where('user_id', $studentId);
+        }
+
+        if ($from = $request->date('from_date')) {
+            $query->where(function ($w) use ($from): void {
+                $w->whereDate('last_detected_at', '>=', $from->toDateString())
+                    ->orWhere(function ($fallback) use ($from): void {
+                        $fallback->whereNull('last_detected_at')
+                            ->whereDate('created_at', '>=', $from->toDateString());
+                    });
+            });
+        }
+
+        if ($to = $request->date('to_date')) {
+            $query->where(function ($w) use ($to): void {
+                $w->whereDate('last_detected_at', '<=', $to->toDateString())
+                    ->orWhere(function ($fallback) use ($to): void {
+                        $fallback->whereNull('last_detected_at')
+                            ->whereDate('created_at', '<=', $to->toDateString());
+                    });
+            });
+        }
+
+        $minEvents = max(1, (int) $request->integer('min_events', 1));
+        if ($minEvents > 1) {
+            $query->whereRaw('COALESCE(event_count, 1) >= ?', [$minEvents]);
+        }
+
+        if ($request->boolean('multi_tab_only')) {
+            $query->whereIn('activity_type', ['duplicate_session', 'multiple_tabs_detected']);
+        }
+
+        $logs = $query->paginate(25)->withQueryString();
+
+        $filterQuery = SuspiciousActivityLog::query();
+        if ($user->hasRole(Role::TEACHER)) {
+            $filterQuery->whereHas('attempt.exam.course.teachers', fn ($q) => $q->where('users.id', $user->id));
+        }
+
+        $activityTypes = (clone $filterQuery)
             ->select('activity_type')
             ->whereNotNull('activity_type')
             ->distinct()
             ->orderBy('activity_type')
             ->pluck('activity_type');
 
-        return view('monitoring.suspicious-logs', compact('logs', 'activityTypes'));
+        $exams = (clone $filterQuery)
+            ->join('exam_attempts', 'exam_attempts.id', '=', 'suspicious_activity_logs.exam_attempt_id')
+            ->join('exams', 'exams.id', '=', 'exam_attempts.exam_id')
+            ->select('exams.id', 'exams.title')
+            ->distinct()
+            ->orderBy('exams.title')
+            ->get();
+
+        $students = (clone $filterQuery)
+            ->join('users', 'users.id', '=', 'suspicious_activity_logs.user_id')
+            ->select('users.id', 'users.full_name')
+            ->distinct()
+            ->orderBy('users.full_name')
+            ->get();
+
+        return view('monitoring.suspicious-logs', compact('logs', 'activityTypes', 'exams', 'students'));
     }
 }

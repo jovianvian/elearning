@@ -1,4 +1,15 @@
 @php
+    $schoolLogoRaw = $teraApp['logo'] ?? null;
+    if (empty($schoolLogoRaw) && file_exists(public_path('images/branding/school-logo.png'))) {
+        $schoolLogoRaw = 'images/branding/school-logo.png';
+    }
+    $schoolLogoUrl = null;
+    if (!empty($schoolLogoRaw)) {
+        $schoolLogoUrl = \Illuminate\Support\Str::startsWith($schoolLogoRaw, ['http://', 'https://', '//', 'data:'])
+            ? $schoolLogoRaw
+            : (\Illuminate\Support\Str::startsWith($schoolLogoRaw, '/') ? $schoolLogoRaw : asset($schoolLogoRaw));
+    }
+
     $role = auth()->user()->role->code ?? '';
     $role = strtolower((string) $role);
     $role = str_replace('-', '_', $role);
@@ -65,6 +76,7 @@
                 'active' => false,
                 'items' => [
                     $makeLeaf(__('ui.users'), 'users', 'users.index', ['users.*']),
+                    $makeLeaf(__('ui.spp_bills'), 'wallet', 'student-bills.index', ['student-bills.*']),
                     $makeLeaf(__('ui.classes'), 'school', 'classes.index', ['classes.*']),
                     $makeLeaf(__('ui.subjects'), 'book-open', 'subjects.index', ['subjects.*']),
                     $makeTree(__('ui.assignments'), 'git-branch-plus', [
@@ -72,6 +84,7 @@
                         $makeLeaf(__('ui.subject_teacher_assignments'), 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
                     ]),
                     $makeLeaf(__('ui.courses'), 'folders', 'courses.index', ['courses.*', 'my-courses.*']),
+                    $makeLeaf(__('ui.learning_materials'), 'book-text', 'learning-materials.index', ['learning-materials.*']),
                 ],
             ],
             [
@@ -91,6 +104,7 @@
                 'active' => false,
                 'items' => [
                     $makeLeaf(__('ui.reports'), 'bar-chart-3', 'reports.index', ['reports.*']),
+                    $makeLeaf(__('ui.e_rapor'), 'file-chart-column', 'super-admin.e-rapor.index', ['super-admin.e-rapor.*']),
                     $makeLeaf(__('ui.suspicious_logs'), 'shield-alert', 'suspicious-activities.index', ['suspicious-activities.*']),
                     $makeLeaf(__('ui.audit_logs'), 'scroll-text', 'super-admin.audit-logs.index', ['super-admin.audit-logs.*']),
                     $makeLeaf(__('ui.login_logs'), 'fingerprint', 'super-admin.login-logs.index', ['super-admin.login-logs.*']),
@@ -124,6 +138,7 @@
                 'active' => false,
                 'items' => [
                     $makeLeaf(__('ui.users'), 'users', 'users.index', ['users.*']),
+                    $makeLeaf(__('ui.spp_bills'), 'wallet', 'student-bills.index', ['student-bills.*']),
                     $makeLeaf(__('ui.classes'), 'school', 'classes.index', ['classes.*']),
                     $makeLeaf(__('ui.subjects'), 'book-open', 'subjects.index', ['subjects.*']),
                     $makeTree(__('ui.assignments'), 'git-branch-plus', [
@@ -131,6 +146,7 @@
                         $makeLeaf(__('ui.subject_teacher_assignments'), 'user-cog', 'assignments.subject-teachers.index', ['assignments.subject-teachers.*']),
                     ]),
                     $makeLeaf(__('ui.courses'), 'folders', 'courses.index', ['courses.*']),
+                    $makeLeaf(__('ui.learning_materials'), 'book-text', 'learning-materials.index', ['learning-materials.*']),
                 ],
             ],
             [
@@ -160,7 +176,9 @@
             'active' => false,
             'items' => [
                 $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.principal', ['dashboard.principal']),
+                $makeLeaf(__('ui.spp_bills'), 'wallet', 'student-bills.index', ['student-bills.*']),
                 $makeLeaf(__('ui.exams'), 'notepad-text', 'exams.index', ['exams.*']),
+                $makeLeaf(__('ui.learning_materials'), 'book-text', 'learning-materials.index', ['learning-materials.*']),
                 $makeLeaf(__('ui.reports'), 'bar-chart-3', 'reports.index', ['reports.*']),
             ],
         ]];
@@ -172,6 +190,7 @@
             'items' => [
                 $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.teacher', ['dashboard.teacher']),
                 $makeLeaf(__('ui.my_courses'), 'folders', 'my-courses.index', ['my-courses.*']),
+                $makeLeaf(__('ui.learning_materials'), 'book-text', 'learning-materials.index', ['learning-materials.*']),
                 $makeLeaf(__('ui.question_banks'), 'library-big', 'question-banks.index', ['question-banks.*']),
                 $makeLeaf(__('ui.question_imports'), 'file-up', 'question-imports.index', ['question-imports.*']),
                 $makeLeaf(__('ui.exams'), 'notepad-text', 'exams.index', ['exams.*']),
@@ -189,6 +208,8 @@
             'items' => [
                 $makeLeaf(__('ui.dashboard'), 'layout-dashboard', 'dashboard.student', ['dashboard.student']),
                 $makeLeaf(__('ui.my_courses'), 'folders', 'my-courses.index', ['my-courses.*']),
+                $makeLeaf(__('ui.learning_materials'), 'book-text', 'student-materials.index', ['student-materials.*']),
+                $makeLeaf(__('ui.my_bills'), 'wallet', 'my-bills.index', ['my-bills.*']),
                 $makeLeaf(__('ui.my_exams'), 'notepad-text', 'student-exams.index', ['student-exams.*']),
                 $makeLeaf(__('ui.notifications'), 'bell', 'notifications.index', ['notifications.*']),
             ],
@@ -215,7 +236,11 @@
     <div class="h-full flex flex-col">
         <div class="shell-header px-4 border-b flex items-center justify-between" style="border-color: var(--shell-divider);">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-black text-lg">{{ strtoupper(substr($teraApp['app_name'] ?? 'T', 0, 1)) }}</div>
+                @if($schoolLogoUrl)
+                    <img src="{{ $schoolLogoUrl }}" alt="School Logo" class="h-11 w-11 shrink-0 object-contain drop-shadow-sm">
+                @else
+                    <div class="h-10 w-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-black text-lg">{{ strtoupper(substr($teraApp['app_name'] ?? 'T', 0, 1)) }}</div>
+                @endif
                 <div x-show="!sidebarMini" x-cloak class="min-w-0">
                     <p class="font-extrabold tracking-wide truncate">{{ $teraApp['app_name'] ?? config('app.name') }}</p>
                     <p class="text-[11px] text-white/70 truncate">{{ __('ui.platform') }} {{ $teraApp['school_name'] ?? '' }}</p>

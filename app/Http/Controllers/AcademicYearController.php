@@ -8,6 +8,7 @@ use App\Models\AcademicYear;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\View\View;
 
 class AcademicYearController extends Controller
@@ -94,7 +95,19 @@ class AcademicYearController extends Controller
 
     public function destroy(Request $request, AcademicYear $academicYear): RedirectResponse|JsonResponse
     {
-        $academicYear->delete();
+        try {
+            $academicYear->delete();
+        } catch (QueryException $exception) {
+            $message = 'Academic year cannot be deleted because it is still referenced by active academic data.';
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => $message,
+                ], 422);
+            }
+
+            return back()->with('error', $message);
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

@@ -90,6 +90,16 @@ class User extends Authenticatable
         return $this->hasMany(UserNotification::class);
     }
 
+    public function materialProgresses(): HasMany
+    {
+        return $this->hasMany(StudentMaterialProgress::class, 'student_id');
+    }
+
+    public function studentBills(): HasMany
+    {
+        return $this->hasMany(StudentBill::class, 'student_id');
+    }
+
     public function hasRole(string ...$codes): bool
     {
         $roleCode = $this->normalizeRoleCode($this->role?->code);

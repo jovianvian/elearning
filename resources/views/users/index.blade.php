@@ -1,6 +1,25 @@
-@extends('layouts.app', ['title' => 'Users'])
+@extends('layouts.app', ['title' => __('ui.users')])
 
 @section('content')
+<style>
+    .users-table .user-actions{
+        display:inline-flex;
+        flex-wrap:nowrap;
+        gap:.45rem;
+        align-items:center;
+    }
+    .users-table .user-actions .tera-btn{
+        padding:.45rem .75rem !important;
+        font-size:.76rem;
+        line-height:1.1;
+        white-space:nowrap;
+    }
+    @media (max-width: 767px){
+        .users-table .user-actions{
+            flex-wrap:wrap;
+        }
+    }
+</style>
 <div
     x-data="userCrudPage({
         roles: @js($roles->map(fn($r) => ['id' => $r->id, 'name' => $r->name])->values()),
@@ -9,7 +28,7 @@
     data-async-list
     data-fragment="#users-table-fragment"
 >
-    <x-ui.page-header title="User Management" subtitle="Manage Super Admin, Admin, Principal, Teacher, and Student accounts.">
+    <x-ui.page-header :title="__('ui.user_management_title')" :subtitle="__('ui.user_management_subtitle')">
         <x-slot:actions>
             <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
                 <i data-lucide="user-plus" class="w-4 h-4"></i>{{ __('ui.add_user') }}
@@ -17,21 +36,21 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search name, username, NIS, NIP">
+    <x-ui.table-toolbar :search-value="request('q')" :search-placeholder="__('ui.search_user_name_username_nis_nip')">
         <x-slot:filters>
             <div>
-                <label class="tera-label">Role</label>
+                <label class="tera-label">{{ __('ui.role') }}</label>
                 <select name="role_id" class="tera-select">
-                    <option value="">All Roles</option>
+                    <option value="">{{ __('ui.all_roles') }}</option>
                     @foreach($roles as $role)
                         <option value="{{ $role->id }}" @selected((string)request('role_id') === (string)$role->id)>{{ $role->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div>
-                <label class="tera-label">Class</label>
+                <label class="tera-label">{{ __('ui.classes') }}</label>
                 <select name="class_id" class="tera-select">
-                    <option value="">All Classes</option>
+                    <option value="">{{ __('ui.all_classes') }}</option>
                     @foreach($classes as $klass)
                         <option value="{{ $klass->id }}" @selected((string)request('class_id') === (string)$klass->id)>{{ $klass->name }}</option>
                     @endforeach
@@ -42,10 +61,10 @@
 
     <div id="users-table-fragment">
         <div class="tera-table-wrap">
-            <table class="tera-table">
+            <table class="tera-table users-table">
                 <thead>
                     <tr>
-                        <th>No</th>
+                        <th>{{ __('ui.no') }}</th>
                         <th>{{ __('ui.name') }}</th>
                         <th>{{ __('ui.role') }}</th>
                         <th>NIS</th>
@@ -68,14 +87,15 @@
                         <td>{{ $user->nip ?: '-' }}</td>
                         <td>{{ $user->email ?: '-' }}</td>
                         <td>
-                            <span class="tera-badge {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
+                            <span class="tera-badge tera-status-badge {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
                                 {{ $user->is_active ? __('ui.active') : __('ui.inactive') }}
                             </span>
                         </td>
                         <td>
-                            <div class="inline-flex items-center gap-2">
-                                <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $user->id }})">{{ __('ui.edit') }}</button>
-                                <button type="button" class="tera-btn tera-btn-danger !px-3 !py-1.5" @click="destroyUser({{ $user->id }}, @js($user->full_name))">{{ __('ui.delete') }}</button>
+                            <div class="user-actions">
+                                <button type="button" class="tera-btn tera-btn-muted" @click="openEdit({{ $user->id }})">{{ __('ui.edit') }}</button>
+                                <button type="button" class="tera-btn tera-btn-reset" @click="resetPasswordDefault({{ $user->id }}, @js($user->full_name))">{{ __('ui.reset') }}</button>
+                                <button type="button" class="tera-btn tera-btn-danger" @click="destroyUser({{ $user->id }}, @js($user->full_name))">{{ __('ui.delete') }}</button>
                             </div>
                         </td>
                     </tr>
@@ -131,7 +151,7 @@
                 </div>
 
                 <div>
-                    <label class="tera-label">{{ __('ui.classes') }} (student)</label>
+                    <label class="tera-label">{{ __('ui.class_for_student') }}</label>
                     <select x-model="form.school_class_id" class="tera-select">
                         <option value="">-</option>
                         <template x-for="klass in classes" :key="klass.id">
@@ -150,7 +170,7 @@
                 </div>
 
                 <div>
-                    <label class="tera-label">Must Change Password</label>
+                    <label class="tera-label">{{ __('ui.must_change_password') }}</label>
                     <select x-model="form.must_change_password" class="tera-select">
                         <option value="0">{{ __('ui.no') }}</option>
                         <option value="1">{{ __('ui.yes') }}</option>
@@ -158,13 +178,13 @@
                 </div>
 
                 <div>
-                    <label class="tera-label" x-text="isEdit ? 'Password (optional)' : 'Password'"></label>
+                    <label class="tera-label" x-text="isEdit ? @js(__('ui.password_optional')) : @js(__('ui.password'))"></label>
                     <input type="password" x-model="form.password" class="tera-input" :required="!isEdit">
                     <p class="mt-1 text-xs text-red-600" x-text="errors.password?.[0]"></p>
                 </div>
 
                 <div>
-                    <label class="tera-label">Confirm Password</label>
+                    <label class="tera-label">{{ __('ui.confirm_password') }}</label>
                     <input type="password" x-model="form.password_confirmation" class="tera-input" :required="!isEdit">
                 </div>
             </div>
@@ -299,7 +319,7 @@ function userCrudPage({ roles, classes }) {
         async destroyUser(userId, name) {
             const confirm = await window.Teramia.confirmDelete(
                 @js(__('ui.delete_user_question')),
-                `Delete ${name}?`
+                `${@js(__('ui.delete'))} ${name}?`
             );
 
             if (!confirm.isConfirmed) return;
@@ -316,6 +336,31 @@ function userCrudPage({ roles, classes }) {
                 await window.Teramia.refreshFragment(window.location.href, '#users-table-fragment');
             } catch (error) {
                 window.Teramia.toast('error', error.message || @js(__('ui.failed_to_delete_user')));
+            }
+        },
+
+        async resetPasswordDefault(userId, name) {
+            const confirm = await window.Teramia.confirmDelete(
+                @js(__('ui.password_reset_user_question')),
+                `${@js(__('ui.password_reset_user_help'))} (${name})`
+            );
+
+            if (!confirm.isConfirmed) return;
+
+            try {
+                const { response, payload } = await window.Teramia.fetchJson(`/users/${userId}/reset-default-password`, {
+                    method: 'POST',
+                    body: JSON.stringify({}),
+                });
+
+                if (!response.ok || !payload?.ok) {
+                    throw new Error(payload?.message || @js(__('ui.password_reset_default_failed')));
+                }
+
+                await window.Teramia.toast('success', payload.message || @js(__('ui.password_reset_default_success')));
+                await window.Teramia.refreshFragment(window.location.href, '#users-table-fragment');
+            } catch (error) {
+                window.Teramia.toast('error', error.message || @js(__('ui.password_reset_default_failed')));
             }
         },
     };

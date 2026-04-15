@@ -1,8 +1,8 @@
-@extends('layouts.app', ['title' => 'Assignments'])
+@extends('layouts.app', ['title' => __('ui.assignments')])
 
 @section('content')
 <div x-data="subjectTeacherAssignmentPage()" data-async-list data-fragment="#subject-teacher-assignments-fragment">
-<x-ui.page-header title="Subject Teacher Assignments" subtitle="Assign teachers to subjects for the active academic period.">
+<x-ui.page-header :title="__('ui.subject_teacher_assignments_title')" :subtitle="__('ui.subject_teacher_assignments_subtitle')">
     <x-slot:actions>
         <a href="{{ route('assignments.subject-teachers.create') }}" class="tera-btn tera-btn-primary">
             <i data-lucide="plus" class="w-4 h-4"></i>{{ __('ui.assign_teacher') }}
@@ -10,12 +10,12 @@
     </x-slot:actions>
 </x-ui.page-header>
 
-<x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search teacher, NIP, or subject">
+<x-ui.table-toolbar :search-value="request('q')" :search-placeholder="__('ui.search_teacher_nip_or_subject')">
     <x-slot:filters>
         <div>
             <label class="tera-label">{{ __('ui.subjects') }}</label>
             <select name="subject_id" class="tera-select">
-                <option value="">All</option>
+                <option value="">{{ __('ui.all') }}</option>
                 @foreach($subjects as $subject)
                     <option value="{{ $subject->id }}" @selected((string)request('subject_id') === (string)$subject->id)>{{ $subject->name_id }}</option>
                 @endforeach
@@ -24,7 +24,7 @@
         <div>
             <label class="tera-label">{{ __('ui.academic_year') }}</label>
             <select name="academic_year_id" class="tera-select">
-                <option value="">All</option>
+                <option value="">{{ __('ui.all') }}</option>
                 @foreach($years as $year)
                     <option value="{{ $year->id }}" @selected((string)request('academic_year_id') === (string)$year->id)>{{ $year->name }}</option>
                 @endforeach
@@ -33,7 +33,7 @@
         <div>
             <label class="tera-label">{{ __('ui.active') }}</label>
             <select name="is_active" class="tera-select">
-                <option value="">All</option>
+                <option value="">{{ __('ui.all') }}</option>
                 <option value="1" @selected(request('is_active') === '1')>{{ __('ui.active') }}</option>
                 <option value="0" @selected(request('is_active') === '0')>{{ __('ui.inactive') }}</option>
             </select>
@@ -46,7 +46,7 @@
         <table class="tera-table">
             <thead>
                 <tr>
-                    <th>No</th>
+                    <th>{{ __('ui.no') }}</th>
                     <th>{{ __('ui.teacher') }}</th>
                     <th>NIP</th>
                     <th>{{ __('ui.subjects') }}</th>
@@ -64,7 +64,7 @@
                     <td>{{ $a->subject?->name_id }}</td>
                     <td>{{ $a->academicYear?->name }}</td>
                     <td>
-                        <span class="tera-badge {{ $a->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $a->is_active ? __('ui.active') : __('ui.inactive') }}</span>
+                        <span class="tera-badge tera-status-badge {{ $a->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $a->is_active ? __('ui.active') : __('ui.inactive') }}</span>
                     </td>
                     <td>
                         <div class="inline-flex items-center gap-2">
@@ -88,7 +88,7 @@ function subjectTeacherAssignmentPage() {
         async destroyItem(id, name) {
             const confirm = await window.Teramia.confirmDelete(
                 @js(__('ui.delete_data_question')),
-                `Delete assignment for ${name}?`
+                `${@js(__('ui.delete'))} ${name}?`
             );
             if (!confirm.isConfirmed) return;
 
@@ -97,11 +97,11 @@ function subjectTeacherAssignmentPage() {
                     method: 'POST',
                     body: JSON.stringify({ _method: 'DELETE' }),
                 });
-                if (!response.ok) throw new Error(payload?.message || 'Failed deleting assignment.');
-                await window.Teramia.toast('success', payload.message || 'Assignment deleted.');
+                if (!response.ok) throw new Error(payload?.message || @js(__('ui.failed_delete_assignment')));
+                await window.Teramia.toast('success', payload.message || @js(__('ui.assignment_deleted')));
                 await window.Teramia.refreshFragment(window.location.href, '#subject-teacher-assignments-fragment');
             } catch (error) {
-                window.Teramia.toast('error', error.message || 'Failed deleting assignment.');
+                window.Teramia.toast('error', error.message || @js(__('ui.failed_delete_assignment')));
             }
         }
     };

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => 'Dashboard'])
+@extends('layouts.app', ['title' => __('ui.dashboard')])
 
 @section('content')
     @php
@@ -22,7 +22,7 @@
         ];
     @endphp
 
-    <x-ui.page-header title="Super Admin Dashboard" subtitle="System-wide control center, logs, restore, and configuration overview.">
+    <x-ui.page-header :title="__('ui.dashboard_super_admin')" :subtitle="__('ui.subtitle_super_admin_dashboard')">
         <x-slot:actions>
             <a href="{{ route('super-admin.settings.edit') }}" class="tera-btn tera-btn-primary"><i data-lucide="settings-2" class="w-4 h-4"></i>{{ __('ui.settings_button') }}</a>
             <a href="{{ route('super-admin.restore-center.index') }}" class="tera-btn tera-btn-muted"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>{{ __('ui.restore_center') }}</a>

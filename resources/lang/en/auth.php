@@ -21,4 +21,13 @@ return [
     'dashboard' => 'Dashboard',
     'switch_lang' => 'Language',
     'status' => 'Status',
+    'login_subheading' => 'Sign in using NIS, NIP, username, or email based on role.',
+    'forgot_subheading' => 'Enter your account email to receive a password reset link.',
+    'forgot_email_help' => 'If account has no active email, ask admin to reset to default password first.',
+    'reset_subheading' => 'Set a new password to continue account access.',
+    'identifier_guide_title' => 'Login Identifier Guide',
+    'identifier_student' => 'Student: NIS / Username / Email',
+    'identifier_teacher' => 'Teacher: NIP / Username / Email',
+    'identifier_admin' => 'Admin / Principal / Super Admin: Username / Email',
+    'signing_in' => 'Signing in...',
 ];

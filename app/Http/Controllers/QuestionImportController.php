@@ -102,21 +102,33 @@ class QuestionImportController extends Controller
     {
         $headers = [
             'type', 'question_text', 'question_text_en', 'points', 'difficulty',
-            'short_answer_key', 'explanation', 'explanation_en',
+            'question_image', 'short_answer_key', 'explanation', 'explanation_en',
             'option_a', 'option_b', 'option_c', 'option_d', 'option_e', 'correct_option',
         ];
 
         $sampleRows = [
             [
-                'multiple_choice', '2 + 2 = ?', '2 + 2 = ?', '1', 'easy', '',
+                'multiple_choice', '2 + 2 = ?', '2 + 2 = ?', '1', 'easy', 'images/questions/math-1.jpg', '',
                 'Basic arithmetic', 'Basic arithmetic', '3', '4', '5', '6', '', 'B',
             ],
             [
-                'short_answer', 'Ibu kota Indonesia?', 'Capital city of Indonesia?', '2', 'easy', 'jakarta',
+                'short_answer', 'Ibu kota Indonesia?', 'Capital city of Indonesia?', '2', 'easy', '/storage/questions/geography-1.png', 'jakarta|dki jakarta',
                 '', '', '', '', '', '', '', '',
             ],
             [
-                'essay', 'Jelaskan dampak globalisasi.', 'Explain the impact of globalization.', '5', 'medium', '',
+                'multiple_response', 'Pilih bilangan genap.', 'Select all even numbers.', '2', 'easy', 'https://example.com/images/even-number.png', '',
+                '', '', '1', '2', '3', '4', '5', 'B,D',
+            ],
+            [
+                'essay', 'Jelaskan dampak globalisasi pada pendidikan.', 'Explain globalization impact in education.', '5', 'medium', '', '',
+                '', '', '', '', '', '', '', '',
+            ],
+            [
+                'multiple_choice', 'Planet terbesar di tata surya adalah ...', 'The largest planet in our solar system is ...', '1', 'easy', '/storage/questions/planet.jpg', '',
+                '', '', 'Mars', 'Venus', 'Jupiter', 'Saturn', '', 'C',
+            ],
+            [
+                'short_answer', 'Hasil dari 10 x 10 adalah ...', 'Result of 10 x 10 is ...', '1', 'easy', 'images/questions/multiply.png', '100|seratus',
                 '', '', '', '', '', '', '', '',
             ],
         ];
@@ -139,13 +151,32 @@ class QuestionImportController extends Controller
         $content .= "B. 4\n";
         $content .= "C. 5\n";
         $content .= "D. 6\n";
+        $content .= "IMAGE: images/questions/math-1.jpg\n";
         $content .= "ANSWER: B\n\n";
+        $content .= "TYPE: short_answer\n";
         $content .= "Ibu kota Indonesia adalah ...\n";
-        $content .= "A. Surabaya\n";
-        $content .= "B. Medan\n";
-        $content .= "C. Jakarta\n";
-        $content .= "D. Bandung\n";
-        $content .= "ANSWER: C\n";
+        $content .= "IMAGE: /storage/questions/geography-1.png\n";
+        $content .= "ANSWER: jakarta|dki jakarta\n\n";
+        $content .= "TYPE: multiple_response\n";
+        $content .= "Pilih bilangan genap berikut.\n";
+        $content .= "A. 1\n";
+        $content .= "B. 2\n";
+        $content .= "C. 3\n";
+        $content .= "D. 4\n";
+        $content .= "IMAGE: https://example.com/images/even-number.png\n";
+        $content .= "ANSWER: B,D\n\n";
+        $content .= "TYPE: essay\n";
+        $content .= "Jelaskan dampak globalisasi pada pendidikan.\n\n";
+        $content .= "Planet terbesar di tata surya adalah ...\n";
+        $content .= "A. Mars\n";
+        $content .= "B. Venus\n";
+        $content .= "C. Jupiter\n";
+        $content .= "D. Saturn\n";
+        $content .= "IMAGE: /storage/questions/planet.jpg\n";
+        $content .= "ANSWER: C\n\n";
+        $content .= "TYPE: short_answer\n";
+        $content .= "Hasil dari 10 x 10 adalah ...\n";
+        $content .= "ANSWER: 100|seratus\n";
 
         return response($content, 200, [
             'Content-Type' => 'text/plain',

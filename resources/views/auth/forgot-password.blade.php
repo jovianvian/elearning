@@ -1,7 +1,7 @@
 @extends('layouts.auth', [
     'title' => __('auth.forgot_password'),
     'heading' => __('auth.forgot_password'),
-    'subheading' => 'Masukkan email akun untuk menerima link reset password.'
+    'subheading' => __('auth.forgot_subheading')
 ])
 
 @section('content')
@@ -10,6 +10,7 @@
         <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
             <input type="email" name="email" required class="w-full rounded-xl border-slate-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-primary">
+            <p class="mt-1 text-xs text-slate-500">{{ __('auth.forgot_email_help') }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <button class="inline-flex justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">

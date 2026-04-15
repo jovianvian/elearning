@@ -40,7 +40,7 @@ class QuestionImportService
 
                 try {
                     $parsed = $this->parseAikenBlock($block);
-                    $this->persistMultipleChoiceQuestion($bank, $actor, $parsed, 'aiken');
+                    $this->persistAikenQuestion($bank, $actor, $parsed, 'aiken');
                     $successCount++;
                 } catch (Throwable $e) {
                     $errors[] = ['row' => $rowNumber, 'error' => $e->getMessage()];
@@ -111,12 +111,23 @@ class QuestionImportService
     {
         $lines = array_values(array_filter(array_map('trim', explode("\n", $block)), static fn ($line) => $line !== ''));
         $answerLine = null;
+        $type = Question::TYPE_MULTIPLE_CHOICE;
+        $imagePath = null;
         $options = [];
         $questionLines = [];
 
         foreach ($lines as $line) {
-            if (preg_match('/^ANSWER\s*:\s*([A-Z])$/i', $line, $matches)) {
-                $answerLine = strtoupper($matches[1]);
+            if (preg_match('/^TYPE\s*:\s*(.+)$/i', $line, $matches)) {
+                $type = $this->normalizeAikenType(trim((string) $matches[1]));
+                continue;
+            }
+
+            if (preg_match('/^ANSWER\s*:\s*(.+)$/i', $line, $matches)) {
+                $answerLine = trim((string) $matches[1]);
+                continue;
+            }
+            if (preg_match('/^IMAGE(?:_URL)?\s*:\s*(.+)$/i', $line, $matches)) {
+                $imagePath = $this->normalizeImageReference((string) $matches[1]);
                 continue;
             }
 
@@ -132,6 +143,45 @@ class QuestionImportService
             throw new RuntimeException('Question text is missing.');
         }
 
+        if ($type === Question::TYPE_ESSAY) {
+            return [
+                'type' => $type,
+                'question_text' => trim(implode(' ', $questionLines)),
+                'options' => [],
+                'correct_option' => null,
+                'correct_options' => [],
+                'short_answer_key' => null,
+                'question_image_path' => $imagePath,
+            ];
+        }
+
+        if ($type === Question::TYPE_SHORT_ANSWER) {
+            if (! $answerLine) {
+                throw new RuntimeException('ANSWER line is required for short_answer.');
+            }
+
+            $shortAnswerKey = collect(preg_split('/[|]/', $answerLine) ?: [])
+                ->map(fn ($value) => $this->normalizeText((string) $value))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($shortAnswerKey === []) {
+                throw new RuntimeException('Short answer key is empty.');
+            }
+
+            return [
+                'type' => $type,
+                'question_text' => trim(implode(' ', $questionLines)),
+                'options' => [],
+                'correct_option' => null,
+                'correct_options' => [],
+                'short_answer_key' => implode('|', $shortAnswerKey),
+                'question_image_path' => $imagePath,
+            ];
+        }
+
         if (count($options) < 2) {
             throw new RuntimeException('At least two answer options are required.');
         }
@@ -140,24 +190,71 @@ class QuestionImportService
             throw new RuntimeException('ANSWER line is missing.');
         }
 
-        if (! array_key_exists($answerLine, $options)) {
+        if ($type === Question::TYPE_MULTIPLE_RESPONSE) {
+            $correctOptions = collect(preg_split('/[,|]/', strtoupper($answerLine)) ?: [])
+                ->map(static fn ($value) => strtoupper(trim((string) $value)))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if (count($correctOptions) < 2) {
+                throw new RuntimeException('Multi-response requires at least two correct option keys in ANSWER.');
+            }
+
+            foreach ($correctOptions as $key) {
+                if (! array_key_exists($key, $options)) {
+                    throw new RuntimeException('ANSWER key does not match available options.');
+                }
+            }
+
+            return [
+                'type' => $type,
+                'question_text' => trim(implode(' ', $questionLines)),
+                'options' => $options,
+                'correct_option' => null,
+                'correct_options' => $correctOptions,
+                'short_answer_key' => null,
+                'question_image_path' => $imagePath,
+            ];
+        }
+
+        $correctOption = strtoupper(trim($answerLine));
+        if (! array_key_exists($correctOption, $options)) {
             throw new RuntimeException('ANSWER key does not match available options.');
         }
 
         return [
+            'type' => $type,
             'question_text' => trim(implode(' ', $questionLines)),
             'options' => $options,
-            'correct_option' => $answerLine,
+            'correct_option' => $correctOption,
+            'correct_options' => [$correctOption],
+            'short_answer_key' => null,
+            'question_image_path' => $imagePath,
         ];
     }
 
-    private function persistMultipleChoiceQuestion(QuestionBank $bank, User $actor, array $payload, string $importSource): void
+    private function normalizeAikenType(string $rawType): string
     {
+        $normalized = strtolower(trim($rawType));
+        return match ($normalized) {
+            'multiple_choice', 'mcq', 'single_choice', 'single_answer' => Question::TYPE_MULTIPLE_CHOICE,
+            'multiple_response', 'multi_response', 'multi_select', 'multi_answer' => Question::TYPE_MULTIPLE_RESPONSE,
+            'short_answer', 'short', 'isian', 'isian_singkat' => Question::TYPE_SHORT_ANSWER,
+            'essay', 'esai' => Question::TYPE_ESSAY,
+            default => Question::TYPE_MULTIPLE_CHOICE,
+        };
+    }
+
+    private function persistAikenQuestion(QuestionBank $bank, User $actor, array $payload, string $importSource): void
+    {
+        $type = (string) ($payload['type'] ?? Question::TYPE_MULTIPLE_CHOICE);
         $question = Question::create([
             'question_bank_id' => $bank->id,
             'subject_id' => $bank->subject_id,
             'created_by' => $actor->id,
-            'type' => Question::TYPE_MULTIPLE_CHOICE,
+            'type' => $type,
             'question_text' => $payload['question_text'],
             'question_text_en' => null,
             'explanation' => null,
@@ -165,18 +262,28 @@ class QuestionImportService
             'points' => 1,
             'difficulty' => 'medium',
             'import_source' => $importSource,
-            'short_answer_key' => null,
+            'short_answer_key' => $type === Question::TYPE_SHORT_ANSWER ? ($payload['short_answer_key'] ?? null) : null,
+            'question_image_path' => $this->normalizeImageReference((string) ($payload['question_image_path'] ?? '')),
             'is_active' => true,
         ]);
 
-        foreach ($payload['options'] as $key => $value) {
-            QuestionOption::create([
-                'question_id' => $question->id,
-                'option_key' => $key,
-                'option_text' => $value,
-                'option_text_en' => null,
-                'is_correct' => $key === $payload['correct_option'],
-            ]);
+        if (in_array($type, [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE], true)) {
+            $correctOptions = collect((array) ($payload['correct_options'] ?? []))
+                ->map(static fn ($value) => strtoupper(trim((string) $value)))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            foreach ($payload['options'] as $key => $value) {
+                QuestionOption::create([
+                    'question_id' => $question->id,
+                    'option_key' => $key,
+                    'option_text' => $value,
+                    'option_text_en' => null,
+                    'is_correct' => in_array($key, $correctOptions, true),
+                ]);
+            }
         }
     }
 
@@ -285,7 +392,7 @@ class QuestionImportService
     private function persistCsvRow(QuestionBank $bank, User $actor, array $row): void
     {
         $type = strtolower($row['type'] ?? '');
-        $allowedTypes = [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_SHORT_ANSWER, Question::TYPE_ESSAY];
+        $allowedTypes = [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE, Question::TYPE_SHORT_ANSWER, Question::TYPE_ESSAY];
 
         if (! in_array($type, $allowedTypes, true)) {
             throw new RuntimeException('Invalid question type.');
@@ -314,9 +421,9 @@ class QuestionImportService
             throw new RuntimeException('short_answer_key is required for short_answer.');
         }
 
-        $multipleChoicePayload = null;
-        if ($type === Question::TYPE_MULTIPLE_CHOICE) {
-            $multipleChoicePayload = $this->buildCsvMultipleChoicePayload($row);
+        $objectivePayload = null;
+        if (in_array($type, [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE], true)) {
+            $objectivePayload = $this->buildCsvObjectivePayload($row, $type);
         }
 
         $question = Question::create([
@@ -326,6 +433,7 @@ class QuestionImportService
             'type' => $type,
             'question_text' => $questionText,
             'question_text_en' => $this->nullable($row['question_text_en'] ?? null),
+            'question_image_path' => $this->normalizeImageReference((string) ($row['question_image'] ?? '')),
             'explanation' => $this->nullable($row['explanation'] ?? null),
             'explanation_en' => $this->nullable($row['explanation_en'] ?? null),
             'points' => $points,
@@ -335,12 +443,12 @@ class QuestionImportService
             'is_active' => true,
         ]);
 
-        if ($type === Question::TYPE_MULTIPLE_CHOICE) {
-            $this->persistCsvMultipleChoiceOptions($question, $multipleChoicePayload);
+        if (in_array($type, [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE], true)) {
+            $this->persistCsvObjectiveOptions($question, $objectivePayload);
         }
     }
 
-    private function buildCsvMultipleChoicePayload(array $row): array
+    private function buildCsvObjectivePayload(array $row, string $type): array
     {
         $keys = ['a', 'b', 'c', 'd', 'e'];
         $options = [];
@@ -357,18 +465,40 @@ class QuestionImportService
             throw new RuntimeException('Multiple choice needs at least two options.');
         }
 
-        $correctOption = strtoupper(trim((string) ($row['correct_option'] ?? '')));
-        if ($correctOption === '' || ! isset($options[$correctOption])) {
-            throw new RuntimeException('correct_option must match one of provided option keys.');
+        if ($type === Question::TYPE_MULTIPLE_CHOICE) {
+            $correctOption = strtoupper(trim((string) ($row['correct_option'] ?? '')));
+            if ($correctOption === '' || ! isset($options[$correctOption])) {
+                throw new RuntimeException('correct_option must match one of provided option keys.');
+            }
+
+            return ['options' => $options, 'correct_options' => [$correctOption]];
         }
 
-        return ['options' => $options, 'correct_option' => $correctOption];
+        $rawCorrect = trim((string) ($row['correct_option'] ?? ''));
+        $correctOptions = collect(explode(',', $rawCorrect))
+            ->map(static fn ($value) => strtoupper(trim($value)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (count($correctOptions) < 2) {
+            throw new RuntimeException('multiple_response requires at least two correct options in correct_option column (comma separated).');
+        }
+
+        foreach ($correctOptions as $correctOption) {
+            if (! isset($options[$correctOption])) {
+                throw new RuntimeException('correct_option must match provided option keys.');
+            }
+        }
+
+        return ['options' => $options, 'correct_options' => $correctOptions];
     }
 
-    private function persistCsvMultipleChoiceOptions(Question $question, array $payload): void
+    private function persistCsvObjectiveOptions(Question $question, array $payload): void
     {
         $options = $payload['options'];
-        $correctOption = $payload['correct_option'];
+        $correctOptions = $payload['correct_options'];
 
         foreach ($options as $key => $text) {
             QuestionOption::create([
@@ -376,7 +506,7 @@ class QuestionImportService
                 'option_key' => $key,
                 'option_text' => $text,
                 'option_text_en' => null,
-                'is_correct' => $key === $correctOption,
+                'is_correct' => in_array($key, $correctOptions, true),
             ]);
         }
     }
@@ -404,5 +534,18 @@ class QuestionImportService
         $normalized = strtolower(trim(preg_replace('/\s+/u', ' ', $text) ?? ''));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function normalizeImageReference(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $normalized = str_replace('\\', '/', $value);
+        $normalized = preg_replace('#^(\./)+#', '', $normalized) ?? $normalized;
+
+        return $normalized;
     }
 }

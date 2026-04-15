@@ -1,8 +1,8 @@
-@extends('layouts.app', ['title' => 'Subjects'])
+@extends('layouts.app', ['title' => __('ui.subjects')])
 
 @section('content')
 <div x-data="subjectCrudPage()" data-async-list data-fragment="#subjects-table-fragment">
-    <x-ui.page-header title="Subject Management" subtitle="Manage bilingual subject data for the school academic structure.">
+    <x-ui.page-header :title="__('ui.subject_management_title')" :subtitle="__('ui.subject_management_subtitle')">
         <x-slot:actions>
             <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
                 <i data-lucide="plus" class="w-4 h-4"></i>{{ __('ui.add_subject') }}
@@ -10,12 +10,12 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search subject name or code">
+    <x-ui.table-toolbar :search-value="request('q')" :search-placeholder="__('ui.search_subject_name_or_code')">
         <x-slot:filters>
             <div>
                 <label class="tera-label">{{ __('ui.active') }}</label>
                 <select name="is_active" class="tera-select">
-                    <option value="">All</option>
+                    <option value="">{{ __('ui.all') }}</option>
                     <option value="1" @selected(request('is_active') === '1')>{{ __('ui.active') }}</option>
                     <option value="0" @selected(request('is_active') === '0')>{{ __('ui.inactive') }}</option>
                 </select>
@@ -28,7 +28,7 @@
             <table class="tera-table">
                 <thead>
                     <tr>
-                        <th>No</th>
+                        <th>{{ __('ui.no') }}</th>
                         <th>{{ __('ui.subject_name_id') }}</th>
                         <th>{{ __('ui.subject_name_en') }}</th>
                         <th>{{ __('ui.code') }}</th>
@@ -43,7 +43,7 @@
                         <td class="font-semibold">{{ $subject->name_id }}</td>
                         <td>{{ $subject->name_en ?: '-' }}</td>
                         <td>{{ $subject->code }}</td>
-                        <td><span class="tera-badge {{ $subject->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $subject->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                        <td><span class="tera-badge tera-status-badge {{ $subject->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $subject->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
                         <td>
                             <div class="inline-flex items-center gap-2">
                                 <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $subject->id }})">{{ __('ui.edit') }}</button>
@@ -63,12 +63,12 @@
         <form @submit.prevent="submitForm" class="space-y-4">
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
-                    <label class="tera-label">Name (Indonesian)</label>
+                    <label class="tera-label">{{ __('ui.name_indonesian') }}</label>
                     <input x-model="form.name_id" class="tera-input" required>
                     <p class="mt-1 text-xs text-red-600" x-text="errors.name_id?.[0]"></p>
                 </div>
                 <div>
-                    <label class="tera-label">Name (English)</label>
+                    <label class="tera-label">{{ __('ui.name_english') }}</label>
                     <input x-model="form.name_en" class="tera-input">
                     <p class="mt-1 text-xs text-red-600" x-text="errors.name_en?.[0]"></p>
                 </div>
@@ -187,7 +187,7 @@ function subjectCrudPage() {
         async destroyItem(id, name) {
             const confirm = await window.Teramia.confirmDelete(
                 @js(__('ui.delete_subject_question')),
-                `Delete ${name}?`
+                `${@js(__('ui.delete'))} ${name}?`
             );
             if (!confirm.isConfirmed) return;
 

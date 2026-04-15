@@ -46,7 +46,15 @@ class AuthController extends Controller
             return back()->withErrors(['login' => __('auth.failed')])->onlyInput('login');
         }
 
-        if (! Hash::check($password, $user->password)) {
+        try {
+            $passwordMatches = Hash::check($password, $user->password);
+        } catch (\RuntimeException) {
+            $this->logLoginAttempt($user, false, __('auth.failed'));
+
+            return back()->withErrors(['login' => __('auth.failed')])->onlyInput('login');
+        }
+
+        if (! $passwordMatches) {
             $this->logLoginAttempt($user, false, __('auth.failed'));
 
             return back()->withErrors(['login' => __('auth.failed')])->onlyInput('login');

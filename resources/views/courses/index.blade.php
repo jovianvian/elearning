@@ -80,7 +80,7 @@
                     <td>{{ $course->semester?->name }}</td>
                     <td>{{ $course->teachers->count() }}</td>
                     <td>
-                        <span class="tera-badge {{ $course->is_published ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
+                        <span class="tera-badge tera-status-badge {{ $course->is_published ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
                             {{ $course->is_published ? __('ui.published') : __('ui.draft') }}
                         </span>
                     </td>

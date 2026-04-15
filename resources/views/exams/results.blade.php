@@ -1,8 +1,8 @@
-@extends('layouts.app', ['title' => 'Exam Results'])
+@extends('layouts.app', ['title' => 'Hasil Ujian'])
 
 @section('content')
     <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
-        <h2 class="text-xl font-semibold">Exam Results</h2>
+        <h2 class="text-xl font-semibold">Hasil Ujian</h2>
         <p class="text-sm text-slate-500">{{ $exam->title }} - {{ $exam->course?->title }}</p>
     </div>
 
@@ -10,13 +10,13 @@
         <table class="w-full text-sm">
             <thead class="bg-slate-50 text-slate-600">
             <tr>
-                <th class="p-3 text-left">Student</th>
+                <th class="p-3 text-left">Siswa</th>
                 <th class="p-3 text-center">Status</th>
-                <th class="p-3 text-center">Objective</th>
-                <th class="p-3 text-center">Essay</th>
-                <th class="p-3 text-center">Final</th>
-                <th class="p-3 text-center">Published</th>
-                <th class="p-3 text-center">Suspicious</th>
+                <th class="p-3 text-center">Objektif</th>
+                <th class="p-3 text-center">Esai</th>
+                <th class="p-3 text-center">Nilai Akhir</th>
+                <th class="p-3 text-center">Dipublikasi</th>
+                <th class="p-3 text-center">Mencurigakan</th>
             </tr>
             </thead>
             <tbody>
@@ -27,11 +27,11 @@
                     <td class="p-3 text-center">{{ $attempt->score_objective }}</td>
                     <td class="p-3 text-center">{{ $attempt->score_essay }}</td>
                     <td class="p-3 text-center font-semibold">{{ $attempt->final_score }}</td>
-                    <td class="p-3 text-center">{{ $attempt->is_published ? 'Yes' : 'No' }}</td>
-                    <td class="p-3 text-center">{{ $attempt->suspicious_flag ? 'Yes' : 'No' }}</td>
+                    <td class="p-3 text-center">{{ $attempt->is_published ? __('ui.yes') : __('ui.no') }}</td>
+                    <td class="p-3 text-center">{{ $attempt->suspicious_flag ? __('ui.yes') : __('ui.no') }}</td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="p-6 text-center text-slate-500">No result data.</td></tr>
+                <tr><td colspan="7" class="p-6 text-center text-slate-500">Belum ada data hasil.</td></tr>
             @endforelse
             </tbody>
         </table>

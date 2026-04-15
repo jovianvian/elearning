@@ -1,8 +1,8 @@
-@extends('layouts.app', ['title' => 'Semesters'])
+@extends('layouts.app', ['title' => __('ui.semesters')])
 
 @section('content')
 <div x-data="semesterCrudPage({ years: @js($academicYears->map(fn($y) => ['id' => $y->id, 'name' => $y->name])->values()) })" data-async-list data-fragment="#semesters-table-fragment">
-    <x-ui.page-header title="Semester Management" subtitle="Manage semester periods and active semester configuration.">
+    <x-ui.page-header :title="__('ui.semester_management_title')" :subtitle="__('ui.semester_management_subtitle')">
         <x-slot:actions>
             <button type="button" class="tera-btn tera-btn-primary" @click="openCreate">
                 <i data-lucide="plus" class="w-4 h-4"></i>{{ __('ui.add_semester') }}
@@ -10,12 +10,12 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.table-toolbar :search-value="request('q')" search-placeholder="Search semester name or code">
+    <x-ui.table-toolbar :search-value="request('q')" :search-placeholder="__('ui.search_semester_name_or_code')">
         <x-slot:filters>
             <div>
                 <label class="tera-label">{{ __('ui.academic_year') }}</label>
                 <select name="academic_year_id" class="tera-select">
-                    <option value="">All</option>
+                    <option value="">{{ __('ui.all') }}</option>
                     @foreach($academicYears as $year)
                         <option value="{{ $year->id }}" @selected((string)request('academic_year_id') === (string)$year->id)>{{ $year->name }}</option>
                     @endforeach
@@ -24,7 +24,7 @@
             <div>
                 <label class="tera-label">{{ __('ui.active') }}</label>
                 <select name="is_active" class="tera-select">
-                    <option value="">All</option>
+                    <option value="">{{ __('ui.all') }}</option>
                     <option value="1" @selected(request('is_active') === '1')>{{ __('ui.active') }}</option>
                     <option value="0" @selected(request('is_active') === '0')>{{ __('ui.inactive') }}</option>
                 </select>
@@ -37,7 +37,7 @@
             <table class="tera-table">
                 <thead>
                 <tr>
-                    <th>No</th>
+                    <th>{{ __('ui.no') }}</th>
                     <th>{{ __('ui.name') }}</th>
                     <th>{{ __('ui.code') }}</th>
                     <th>{{ __('ui.academic_year') }}</th>
@@ -52,7 +52,7 @@
                         <td>{{ $semester->name }}</td>
                         <td>{{ $semester->code }}</td>
                         <td>{{ $semester->academicYear?->name }}</td>
-                        <td><span class="tera-badge {{ $semester->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $semester->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
+                        <td><span class="tera-badge tera-status-badge {{ $semester->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">{{ $semester->is_active ? __('ui.active') : __('ui.inactive') }}</span></td>
                         <td>
                             <div class="inline-flex gap-2">
                                 <button type="button" class="tera-btn tera-btn-muted !px-3 !py-1.5" @click="openEdit({{ $semester->id }})">{{ __('ui.edit') }}</button>
@@ -215,7 +215,7 @@ function semesterCrudPage({ years }) {
         async destroyItem(id, name) {
             const confirm = await window.Teramia.confirmDelete(
                 @js(__('ui.delete_semester_question')),
-                `Delete ${name}?`
+                `${@js(__('ui.delete'))} ${name}?`
             );
             if (!confirm.isConfirmed) return;
 

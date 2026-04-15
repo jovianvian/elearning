@@ -26,11 +26,19 @@
             @php($question = $answer->question)
             <div class="bg-white rounded-xl border border-slate-200 p-4">
                 <div class="font-medium">{{ $loop->iteration }}. {{ $question?->question_text }}</div>
+                @if(!empty($question?->image_url))
+                    <div class="mt-2">
+                        <img src="{{ $question->image_url }}" alt="Question image" class="max-h-56 rounded border border-slate-200 bg-white object-contain">
+                    </div>
+                @endif
                 <div class="text-xs text-slate-500 mt-1">{{ ucfirst($question?->type) }}</div>
 
                 <div class="mt-2 text-sm">
                     @if($question?->type === 'multiple_choice')
                         <div>{{ __('ui.your_answer') }}: {{ $answer->selectedOption?->option_key ?? '-' }}</div>
+                    @elseif($question?->type === 'multiple_response')
+                        @php($selectedKeys = $question?->options?->whereIn('id', $answer->selected_option_ids_json ?? [])->pluck('option_key')->values()->all() ?? [])
+                        <div>{{ __('ui.your_answer') }}: {{ empty($selectedKeys) ? '-' : implode(', ', $selectedKeys) }}</div>
                     @else
                         <div>{{ __('ui.your_answer') }}: {{ $answer->answer_text ?: '-' }}</div>
                     @endif

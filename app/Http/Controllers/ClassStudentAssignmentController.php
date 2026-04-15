@@ -76,8 +76,7 @@ class ClassStudentAssignmentController extends Controller
         }
 
         ClassStudent::create($data);
-
-        User::where('id', $data['student_id'])->update(['school_class_id' => $data['class_id']]);
+        $this->syncStudentClassSnapshot((int) $data['student_id']);
 
         return redirect()->route('assignments.class-students.index')->with('success', 'Student class assignment created.');
     }
@@ -93,15 +92,33 @@ class ClassStudentAssignmentController extends Controller
 
     public function update(UpdateClassStudentAssignmentRequest $request, ClassStudent $class_student): RedirectResponse
     {
-        $class_student->update($request->validated());
-        User::where('id', $class_student->student_id)->update(['school_class_id' => $class_student->class_id]);
+        $data = $request->validated();
+
+        $existing = ClassStudent::where('student_id', $data['student_id'])
+            ->where('academic_year_id', $data['academic_year_id'])
+            ->where('id', '!=', $class_student->id)
+            ->first();
+
+        if ($existing) {
+            throw ValidationException::withMessages([
+                'student_id' => 'Student already assigned for this academic year.',
+            ]);
+        }
+
+        $previousStudentId = (int) $class_student->student_id;
+        $class_student->update($data);
+
+        $this->syncStudentClassSnapshot($previousStudentId);
+        $this->syncStudentClassSnapshot((int) $class_student->student_id);
 
         return redirect()->route('assignments.class-students.index')->with('success', 'Student class assignment updated.');
     }
 
     public function destroy(Request $request, ClassStudent $class_student): RedirectResponse|JsonResponse
     {
+        $studentId = (int) $class_student->student_id;
         $class_student->delete();
+        $this->syncStudentClassSnapshot($studentId);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -111,5 +128,21 @@ class ClassStudentAssignmentController extends Controller
         }
 
         return redirect()->route('assignments.class-students.index')->with('success', 'Student class assignment deleted.');
+    }
+
+    private function syncStudentClassSnapshot(int $studentId): void
+    {
+        $latestActiveClassId = ClassStudent::query()
+            ->join('academic_years', 'academic_years.id', '=', 'class_students.academic_year_id')
+            ->where('class_students.student_id', $studentId)
+            ->where('class_students.status', 'active')
+            ->orderByDesc('academic_years.is_active')
+            ->orderByDesc('academic_years.start_date')
+            ->orderByDesc('class_students.id')
+            ->value('class_students.class_id');
+
+        User::where('id', $studentId)->update([
+            'school_class_id' => $latestActiveClassId ?: null,
+        ]);
     }
 }

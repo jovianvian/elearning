@@ -14,10 +14,11 @@ class SaveExamAnswersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'answers' => ['required', 'array'],
+            'answers' => ['nullable', 'array'],
             'answers.*.selected_option_id' => ['nullable', 'integer'],
+            'answers.*.selected_option_ids' => ['nullable', 'array'],
+            'answers.*.selected_option_ids.*' => ['nullable', 'integer'],
             'answers.*.answer_text' => ['nullable', 'string'],
         ];
     }
 }
-

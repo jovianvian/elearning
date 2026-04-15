@@ -8,13 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ExamAttemptAnswer extends Model
 {
     protected $fillable = [
-        'exam_attempt_id', 'question_id', 'selected_option_id', 'answer_text',
+        'exam_attempt_id', 'question_id', 'selected_option_id', 'selected_option_ids_json', 'answer_text',
         'is_correct', 'score', 'teacher_feedback', 'graded_by', 'graded_at',
     ];
 
     protected function casts(): array
     {
-        return ['is_correct' => 'boolean', 'graded_at' => 'datetime'];
+        return ['is_correct' => 'boolean', 'graded_at' => 'datetime', 'selected_option_ids_json' => 'array'];
     }
 
     public function attempt(): BelongsTo

@@ -129,12 +129,54 @@ class ExamEngineService
                         'is_correct' => $isCorrect,
                         'score' => $isCorrect ? (float) $question->points : 0,
                     ]);
+                } elseif ($question->type === Question::TYPE_MULTIPLE_RESPONSE) {
+                    $selectedIds = collect((array) ($answerData['selected_option_ids'] ?? []))
+                        ->map(static fn ($id) => (int) $id)
+                        ->filter(static fn ($id) => $id > 0)
+                        ->unique()
+                        ->values();
+
+                    $validSelectedIds = QuestionOption::query()
+                        ->where('question_id', $question->id)
+                        ->whereIn('id', $selectedIds->all())
+                        ->pluck('id')
+                        ->map(static fn ($id) => (int) $id)
+                        ->unique()
+                        ->values();
+
+                    $correctIds = QuestionOption::query()
+                        ->where('question_id', $question->id)
+                        ->where('is_correct', true)
+                        ->pluck('id')
+                        ->map(static fn ($id) => (int) $id)
+                        ->unique()
+                        ->sort()
+                        ->values();
+
+                    $sortedSelected = $validSelectedIds->sort()->values();
+                    $isCorrect = $sortedSelected->count() > 0
+                        && $sortedSelected->count() === $correctIds->count()
+                        && $sortedSelected->diff($correctIds)->isEmpty();
+
+                    $answer->update([
+                        'selected_option_id' => null,
+                        'selected_option_ids_json' => $validSelectedIds->all(),
+                        'answer_text' => null,
+                        'is_correct' => $isCorrect,
+                        'score' => $isCorrect ? (float) $question->points : 0,
+                    ]);
                 } elseif ($question->type === Question::TYPE_SHORT_ANSWER) {
                     $text = trim((string) ($answerData['answer_text'] ?? ''));
                     $normalized = $this->normalizeText($text);
-                    $isCorrect = $normalized !== null && $normalized === $question->short_answer_key;
+                    $acceptedKeys = collect(explode('|', (string) ($question->short_answer_key ?? '')))
+                        ->map(fn ($value) => $this->normalizeText((string) $value))
+                        ->filter()
+                        ->unique()
+                        ->values();
+                    $isCorrect = $normalized !== null && $acceptedKeys->contains($normalized);
                     $answer->update([
                         'selected_option_id' => null,
+                        'selected_option_ids_json' => null,
                         'answer_text' => $text === '' ? null : $text,
                         'is_correct' => $isCorrect,
                         'score' => $isCorrect ? (float) $question->points : 0,
@@ -143,6 +185,7 @@ class ExamEngineService
                     $text = trim((string) ($answerData['answer_text'] ?? ''));
                     $answer->update([
                         'selected_option_id' => null,
+                        'selected_option_ids_json' => null,
                         'answer_text' => $text === '' ? null : $text,
                         'is_correct' => null,
                     ]);
@@ -165,7 +208,7 @@ class ExamEngineService
 
             foreach ($attempt->answers as $answer) {
                 $questionType = $answer->question?->type;
-                if (in_array($questionType, [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_SHORT_ANSWER], true)) {
+                if (in_array($questionType, [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE, Question::TYPE_SHORT_ANSWER], true)) {
                     $scoreObjective += (float) $answer->score;
                 } elseif ($questionType === Question::TYPE_ESSAY) {
                     $scoreEssay += (float) $answer->score;
@@ -220,7 +263,7 @@ class ExamEngineService
             : $durationDeadline;
     }
 
-    public function gradeEssayAnswers(ExamAttempt $attempt, User $teacher, array $gradingPayload): ExamAttempt
+    public function gradeSubjectiveAnswers(ExamAttempt $attempt, User $teacher, array $gradingPayload): ExamAttempt
     {
         return DB::transaction(function () use ($attempt, $teacher, $gradingPayload): ExamAttempt {
             foreach ($gradingPayload as $answerId => $grading) {
@@ -229,12 +272,16 @@ class ExamEngineService
                     ->where('exam_attempt_id', $attempt->id)
                     ->first();
 
-                if (! $answer || $answer->question?->type !== Question::TYPE_ESSAY) {
+                $questionType = $answer?->question?->type;
+                if (! $answer || $questionType !== Question::TYPE_ESSAY) {
                     continue;
                 }
 
+                $score = (float) ($grading['score'] ?? 0);
+                $maxPoints = (float) ($answer->question?->points ?? 0);
+
                 $answer->update([
-                    'score' => (float) ($grading['score'] ?? 0),
+                    'score' => max(0, min($score, $maxPoints)),
                     'teacher_feedback' => trim((string) ($grading['teacher_feedback'] ?? '')) ?: null,
                     'graded_by' => $teacher->id,
                     'graded_at' => now(),
@@ -244,16 +291,18 @@ class ExamEngineService
             $attempt->refresh()->loadMissing('answers.question');
             $scoreObjective = 0.0;
             $scoreEssay = 0.0;
-            $hasUngradedEssay = false;
+            $hasUngradedSubjective = false;
 
             foreach ($attempt->answers as $answer) {
                 $type = $answer->question?->type;
-                if (in_array($type, [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_SHORT_ANSWER], true)) {
+                if (in_array($type, [Question::TYPE_MULTIPLE_CHOICE, Question::TYPE_MULTIPLE_RESPONSE], true)) {
+                    $scoreObjective += (float) $answer->score;
+                } elseif ($type === Question::TYPE_SHORT_ANSWER) {
                     $scoreObjective += (float) $answer->score;
                 } elseif ($type === Question::TYPE_ESSAY) {
                     $scoreEssay += (float) $answer->score;
                     if ($answer->graded_at === null) {
-                        $hasUngradedEssay = true;
+                        $hasUngradedSubjective = true;
                     }
                 }
             }
@@ -262,7 +311,7 @@ class ExamEngineService
                 'score_objective' => $scoreObjective,
                 'score_essay' => $scoreEssay,
                 'final_score' => $scoreObjective + $scoreEssay,
-                'status' => $hasUngradedEssay ? $attempt->status : ExamAttempt::STATUS_GRADED,
+                'status' => $hasUngradedSubjective ? $attempt->status : ExamAttempt::STATUS_GRADED,
             ]);
 
             return $attempt->fresh();

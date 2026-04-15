@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AppSetting extends Model
 {
     protected $fillable = [
-        'app_name', 'school_name', 'school_logo', 'school_favicon', 'primary_color', 'secondary_color', 'accent_color',
+        'app_name', 'school_name', 'school_logo', 'school_favicon', 'building_background', 'primary_color', 'secondary_color', 'accent_color',
         'default_locale', 'supported_locales_json', 'footer_text', 'school_email', 'school_phone', 'school_address',
         'active_academic_year_id', 'active_semester_id',
     ];

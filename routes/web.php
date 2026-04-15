@@ -12,17 +12,22 @@ use App\Http\Controllers\ExamGradingController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\LearningMaterialController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\QuestionImportController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportCardController;
 use App\Http\Controllers\RestoreCenterController;
 use App\Http\Controllers\SchoolClassController;
+use App\Http\Controllers\StudentCourseMaterialController;
 use App\Http\Controllers\StudentExamAttemptController;
 use App\Http\Controllers\SuspiciousActivityController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectTeacherAssignmentController;
+use App\Http\Controllers\StudentBillController;
+use App\Http\Controllers\StudentMyBillController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -74,6 +79,7 @@ Route::middleware(['auth', 'ensure.password.changed'])->group(function (): void 
     Route::middleware('role:super_admin')->prefix('super-admin')->name('super-admin.')->group(function (): void {
         Route::get('/settings', [AppSettingController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [AppSettingController::class, 'update'])->name('settings.update');
+        Route::get('/e-rapor', [ReportCardController::class, 'index'])->name('e-rapor.index');
 
         Route::resource('academic-years', AcademicYearController::class)->except(['show']);
         Route::resource('semesters', SemesterController::class)->except(['show']);
@@ -85,6 +91,7 @@ Route::middleware(['auth', 'ensure.password.changed'])->group(function (): void 
 
     Route::middleware('role:super_admin,admin')->group(function (): void {
         Route::resource('users', UserController::class)->except(['show']);
+        Route::post('users/{user}/reset-default-password', [UserController::class, 'resetDefaultPassword'])->name('users.reset-default-password');
         Route::resource('classes', SchoolClassController::class)
             ->parameters(['classes' => 'school_class'])
             ->except(['show']);
@@ -107,6 +114,18 @@ Route::middleware(['auth', 'ensure.password.changed'])->group(function (): void 
         Route::get('exams/{exam}', [ExamController::class, 'show'])->whereNumber('exam')->name('exams.show');
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('reports/exams/{exam}/scores', [ReportController::class, 'examScores'])->whereNumber('exam')->name('reports.exam-scores');
+        Route::get('learning-materials', [LearningMaterialController::class, 'index'])->name('learning-materials.index');
+        Route::get('learning-materials/{learningMaterial}', [LearningMaterialController::class, 'show'])->name('learning-materials.show');
+    });
+
+    Route::middleware('role:super_admin,admin,principal')->group(function (): void {
+        Route::get('student-bills', [StudentBillController::class, 'index'])->name('student-bills.index');
+        Route::get('student-bills/{studentBill}', [StudentBillController::class, 'show'])->name('student-bills.show');
+    });
+
+    Route::middleware('role:super_admin,admin')->group(function (): void {
+        Route::post('student-bills/generate', [StudentBillController::class, 'generate'])->name('student-bills.generate');
+        Route::post('student-bills/{studentBill}/payments', [StudentBillController::class, 'storePayment'])->name('student-bills.payments.store');
     });
 
     Route::middleware('role:super_admin,admin,teacher')->group(function (): void {
@@ -121,6 +140,12 @@ Route::middleware(['auth', 'ensure.password.changed'])->group(function (): void 
         Route::resource('question-imports', QuestionImportController::class)->only(['index', 'create', 'store']);
         Route::get('question-imports/templates/csv', [QuestionImportController::class, 'downloadCsvTemplate'])->name('question-imports.template.csv');
         Route::get('question-imports/templates/aiken', [QuestionImportController::class, 'downloadAikenTemplate'])->name('question-imports.template.aiken');
+        Route::get('learning-materials/create', [LearningMaterialController::class, 'create'])->name('learning-materials.create');
+        Route::post('learning-materials', [LearningMaterialController::class, 'store'])->name('learning-materials.store');
+        Route::get('learning-materials/{learningMaterial}/edit', [LearningMaterialController::class, 'edit'])->name('learning-materials.edit');
+        Route::put('learning-materials/{learningMaterial}', [LearningMaterialController::class, 'update'])->name('learning-materials.update');
+        Route::delete('learning-materials/{learningMaterial}', [LearningMaterialController::class, 'destroy'])->name('learning-materials.destroy');
+        Route::patch('learning-materials/{learningMaterial}/toggle-publish', [LearningMaterialController::class, 'togglePublish'])->name('learning-materials.toggle-publish');
 
         Route::get('question-banks/{questionBank}/questions/create', [QuestionController::class, 'create'])->name('question-banks.questions.create');
         Route::post('question-banks/{questionBank}/questions', [QuestionController::class, 'store'])->name('question-banks.questions.store');
@@ -147,6 +172,17 @@ Route::middleware(['auth', 'ensure.password.changed'])->group(function (): void 
         Route::post('/attempt/{attempt}/submit', [StudentExamAttemptController::class, 'submitAttempt'])->name('attempt.submit');
         Route::get('/attempt/{attempt}/result', [StudentExamAttemptController::class, 'result'])->name('attempt.result');
         Route::post('/attempt/{attempt}/events', [StudentExamAttemptController::class, 'logEvent'])->name('attempt.events');
+    });
+
+    Route::middleware('role:student')->prefix('student-materials')->name('student-materials.')->group(function (): void {
+        Route::get('/', [StudentCourseMaterialController::class, 'index'])->name('index');
+        Route::get('/{learningMaterial}', [StudentCourseMaterialController::class, 'show'])->name('show');
+        Route::post('/{learningMaterial}/complete', [StudentCourseMaterialController::class, 'complete'])->name('complete');
+    });
+
+    Route::middleware('role:student')->prefix('my-bills')->name('my-bills.')->group(function (): void {
+        Route::get('/', [StudentMyBillController::class, 'index'])->name('index');
+        Route::get('/{studentBill}', [StudentMyBillController::class, 'show'])->name('show');
     });
 });
 
